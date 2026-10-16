@@ -5,11 +5,13 @@ import {
   Layers, 
   Eye, 
   Maximize2, 
+  Minimize2,
   Camera, 
   Sparkles, 
-  Info,
-  Palette,
-  Target
+  Info, 
+  Palette, 
+  Target,
+  Download
 } from 'lucide-react';
 
 export default function ProteinViewer3D({ 
@@ -19,6 +21,7 @@ export default function ProteinViewer3D({
   highlightResidue, 
   onClearHighlight 
 }) {
+  const panelRef = useRef(null);
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +31,26 @@ export default function ProteinViewer3D({
   const [colorScheme, setColorScheme] = useState('plddt'); // plddt, rainbow, ss, chain
   const [showSurface, setShowSurface] = useState(false);
   const [selectedResidueInfo, setSelectedResidueInfo] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [customResidue, setCustomResidue] = useState('');
+  const [activeCustomResidue, setActiveCustomResidue] = useState(null);
+
+  // Sync fullscreen state & resize viewer on change
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const full = !!document.fullscreenElement;
+      setIsFullscreen(full);
+      setTimeout(() => {
+        if (viewerRef.current) {
+          viewerRef.current.resize();
+          viewerRef.current.render();
+        }
+      }, 150);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Initialize or re-render 3Dmol viewer
   useEffect(() => {
@@ -197,7 +220,7 @@ export default function ProteinViewer3D({
   // Download snapshot
   const handleSnapshot = () => {
     if (!viewerRef.current) return;
-    const canvas = containerRef.current.querySelector('canvas');
+    const canvas = containerRef.current?.querySelector('canvas');
     if (canvas) {
       const image = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -207,9 +230,82 @@ export default function ProteinViewer3D({
     }
   };
 
+  // Download PDB coordinates file
+  const handleDownloadPDB = () => {
+    if (!accession) return;
+    const a = document.createElement('a');
+    a.href = `/api/pdb/${accession}`;
+    a.download = `${geneSymbol || accession}_alphafold.pdb`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Toggle Fullscreen
+  const toggleFullscreen = () => {
+    if (!panelRef.current) return;
+    if (!document.fullscreenElement) {
+      panelRef.current.requestFullscreen().catch((err) => {
+        console.error('Fullscreen request failed:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Exit fullscreen failed:', err);
+      });
+    }
+  };
+
+  // Jump to custom residue position
+  const handleJumpToResidue = (e) => {
+    e?.preventDefault();
+    const pos = parseInt(customResidue.trim(), 10);
+    if (isNaN(pos) || pos <= 0) return;
+
+    if (viewerRef.current) {
+      const viewer = viewerRef.current;
+      viewer.spin(false);
+      setIsSpinning(false);
+      viewer.removeAllLabels();
+
+      // Highlight target residue
+      viewer.setStyle({ resi: pos }, {
+        stick: { color: '#f43f5e', radius: 0.4 },
+        sphere: { color: '#fb7185', scale: 0.5 }
+      });
+
+      viewer.addLabel(`Kalıntı Pos ${pos}`, {
+        fontSize: 14,
+        fontColor: '#ffffff',
+        backgroundColor: '#e11d48',
+        backgroundOpacity: 0.85,
+        inFront: true
+      }, { resi: pos });
+
+      viewer.zoomTo({ resi: pos }, 800);
+      viewer.render();
+
+      setActiveCustomResidue(pos);
+      onClearHighlight && onClearHighlight();
+    }
+  };
+
+  const handleClearCustomResidue = () => {
+    setActiveCustomResidue(null);
+    setCustomResidue('');
+    if (viewerRef.current) {
+      viewerRef.current.removeAllLabels();
+      applyStyling(viewerRef.current, renderStyle, colorScheme, showSurface);
+      viewerRef.current.zoomTo();
+    }
+  };
+
   // Focus and highlight specific residue from mutation selection
   useEffect(() => {
     if (!viewerRef.current || !highlightResidue) return;
+
+    // Reset custom residue highlight when prop changes
+    setActiveCustomResidue(null);
+    setCustomResidue('');
 
     const viewer = viewerRef.current;
     const resi = highlightResidue.position;
@@ -244,13 +340,25 @@ export default function ProteinViewer3D({
   }, [highlightResidue]);
 
   return (
-    <div className="glass-panel" style={{ position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div 
+      ref={panelRef}
+      className="glass-panel" 
+      style={{ 
+        position: 'relative', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column',
+        ...(isFullscreen ? { background: '#060911', borderRadius: 0 } : {})
+      }}
+    >
       {/* Top Header Bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 20px',
+        flexWrap: 'wrap',
+        gap: '12px',
+        padding: '14px 20px',
         borderBottom: '1px solid var(--border-subtle)',
         background: 'rgba(10, 15, 28, 0.7)',
         backdropFilter: 'blur(8px)'
@@ -276,8 +384,52 @@ export default function ProteinViewer3D({
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Action Controls & Jump Input */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          {/* Jump to Residue Form */}
+          <form onSubmit={handleJumpToResidue} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Target size={13} style={{ position: 'absolute', left: '8px', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <input
+                type="number"
+                min="1"
+                placeholder="Kalıntı No (örn: 175)"
+                value={customResidue}
+                onChange={(e) => setCustomResidue(e.target.value)}
+                style={{
+                  width: '135px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '6px 8px 6px 26px',
+                  color: '#fff',
+                  fontSize: '0.78rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              title="Girilen amino asit kalıntısına 3D odaklan"
+              style={{
+                background: 'rgba(244, 63, 94, 0.15)',
+                border: '1px solid rgba(244, 63, 94, 0.3)',
+                color: '#fb7185',
+                borderRadius: '8px',
+                padding: '6px 10px',
+                fontSize: '0.78rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s'
+              }}
+            >
+              Odaklan
+            </button>
+          </form>
+
+          <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)', margin: '0 2px' }}></div>
+
           <button
             onClick={toggleSpin}
             title={isSpinning ? "Dönüşü Durdur" : "Otomatik Döndür"}
@@ -317,6 +469,25 @@ export default function ProteinViewer3D({
           </button>
 
           <button
+            onClick={handleDownloadPDB}
+            title="AlphaFold .PDB Koordinat Dosyasını İndir"
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Download size={16} />
+          </button>
+
+          <button
             onClick={handleSnapshot}
             title="Yüksek Çözünürlüklü Görüntü İndir (PNG)"
             style={{
@@ -334,11 +505,36 @@ export default function ProteinViewer3D({
           >
             <Camera size={16} />
           </button>
+
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
+            style={{
+              background: isFullscreen ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              color: isFullscreen ? '#38bdf8' : 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
         </div>
       </div>
 
       {/* 3D Canvas Container */}
-      <div style={{ position: 'relative', width: '100%', height: '480px', background: '#050811' }}>
+      <div style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: isFullscreen ? 'calc(100vh - 125px)' : '480px', 
+        background: '#050811',
+        transition: 'height 0.2s'
+      }}>
         {loading && (
           <div style={{
             position: 'absolute',
@@ -390,7 +586,7 @@ export default function ProteinViewer3D({
           style={{ width: '100%', height: '100%', cursor: 'grab' }}
         ></div>
 
-        {/* Highlight Banner if Mutation is selected */}
+        {/* Highlight Banner if Mutation is selected from table */}
         {highlightResidue && (
           <div style={{
             position: 'absolute',
@@ -421,6 +617,45 @@ export default function ProteinViewer3D({
                   viewerRef.current.zoomTo();
                 }
               }}
+              style={{
+                background: 'rgba(0, 0, 0, 0.25)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                cursor: 'pointer',
+                fontSize: '0.75rem'
+              }}
+            >
+              Temizle
+            </button>
+          </div>
+        )}
+
+        {/* Custom Residue Jump Banner */}
+        {activeCustomResidue && !highlightResidue && (
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            background: 'rgba(225, 29, 72, 0.9)',
+            backdropFilter: 'blur(10px)',
+            color: '#fff',
+            padding: '8px 14px',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '0.8rem',
+            boxShadow: '0 4px 15px rgba(225, 29, 72, 0.4)',
+            zIndex: 5
+          }}>
+            <Target size={16} />
+            <span>
+              <strong>Özel Kalıntı:</strong> Pozisyon {activeCustomResidue}
+            </span>
+            <button
+              onClick={handleClearCustomResidue}
               style={{
                 background: 'rgba(0, 0, 0, 0.25)',
                 border: 'none',

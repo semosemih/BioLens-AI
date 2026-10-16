@@ -20,7 +20,7 @@ BioLens AI; biyoloji ve tıp araştırmacıları, öğrenciler ve biyomedikal me
      - 🟨 **50 - 70 (Sarı):** Düşük güven (esnek döngüler ve yüzey bölgeleri).
      - 🟧 **< 50 (Turuncu):** Çok düşük güven (Doğal olarak düzensiz / IDR segmentleri).
    - Şerit (Ribbon), Çubuk (Stick), Küre (Sphere) ve Moleküler Yüzey (Surface) görünümleri.
-   - Otomatik döndürme, kamera sıfırlama ve yüksek çözünürlüklü PNG görüntü kaydetme.
+   - Otomatik döndürme, kamera sıfırlama, tam ekran (fullscreen) modu, doğrudan AlphaFold `.pdb` koordinat dosyası indirme, kullanıcı tanımlı kalıntı pozisyonuna 3B odaklanma ve yüksek çözünürlüklü PNG görüntü kaydetme.
 
 3. **Klinik Mutasyonlar & 3B Yapıda Doğrudan Kalıntı İşaretleme:**
    - **NCBI ClinVar** ve **UniProt** veritabanlarından patojenik varyasyonların listelenmesi (örn. p.Arg175His, p.Gly12Asp).
