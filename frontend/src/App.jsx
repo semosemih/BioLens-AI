@@ -163,7 +163,10 @@ export default function App() {
             }}>
               {/* Left Column: Protein Overview & AlphaFold Confidence Score */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <ProteinOverview protein={proteinData.uniprot} />
+                <ProteinOverview 
+                  protein={proteinData.uniprot} 
+                  fullData={proteinData} 
+                />
                 <AlphaFoldConfidenceCard
                   alphafold={proteinData.alphafold}
                   accession={proteinData.accession}

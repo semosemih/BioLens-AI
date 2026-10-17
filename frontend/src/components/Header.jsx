@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Sparkles, Dna, Activity, Shield, Flame, Heart, Brain, Filter, Zap } from 'lucide-react';
+import { Search, Sparkles, Dna, Activity, Shield, Flame, Heart, Brain, Filter, Zap, History } from 'lucide-react';
 
 const ICON_MAP = {
   shield: Shield,
@@ -16,11 +16,40 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
   const searchTimeoutRef = useRef(null);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('biolens_recent_searches');
+      if (saved) {
+        setRecentSearches(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed to load recent searches:', e);
+    }
+  }, []);
+
+  const saveRecent = (query) => {
+    if (!query) return;
+    const clean = query.trim().toUpperCase();
+    if (!clean || clean.length > 20) return;
+
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((item) => item !== clean);
+      const updated = [clean, ...filtered].slice(0, 5);
+      try {
+        localStorage.setItem('biolens_recent_searches', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
 
   useEffect(() => {
     if (currentQuery) {
       setSearchTerm(currentQuery);
+      saveRecent(currentQuery);
     }
   }, [currentQuery]);
 
@@ -235,7 +264,7 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
           </div>
         </div>
 
-        {/* Quick select example protein pills */}
+        {/* Quick select example protein pills & Recent searches */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -243,6 +272,36 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
           overflowX: 'auto',
           paddingBottom: '4px'
         }}>
+          {recentSearches && recentSearches.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.73rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                <History size={13} />
+                Son:
+              </span>
+              {recentSearches.map((item, idx) => (
+                <button
+                  key={`rec-${idx}`}
+                  onClick={() => onSearch(item)}
+                  style={{
+                    background: currentQuery && currentQuery.toUpperCase() === item ? 'rgba(56, 189, 248, 0.25)' : 'rgba(56, 189, 248, 0.08)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    color: '#38bdf8',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  title={`${item} verilerini yükle`}
+                >
+                  {item}
+                </button>
+              ))}
+              <div style={{ width: '1px', height: '16px', background: 'var(--border-subtle)', margin: '0 4px' }}></div>
+            </div>
+          )}
+
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
             Hızlı İncele:
           </span>

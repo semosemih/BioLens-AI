@@ -8,8 +8,9 @@ BioLens AI; biyoloji ve tıp araştırmacıları, öğrenciler ve biyomedikal me
 
 ## 🌟 Öne Çıkan Özellikler
 
-1. **Akıllı Protein Arama & UniProt Entegrasyonu:**
+1. **Akıllı Protein Arama, Arama Geçmişi & UniProt Entegrasyonu:**
    - Gen adı (ör. `TP53`, `EGFR`, `BRCA1`, `INS`, `CFTR`) veya UniProt Accession (`P04637`) ile anında arama ve otomatik tamamlama.
+   - **Son Aramalar Geçmişi:** İncelenen son proteinlerin yerel hafızada tutularak tek tıkla yeniden açılması.
    - Biyolojik süreçler, Gene Ontology (GO terimleri), hücresel yerleşim (çekirdek, sitoplazma, membran vb.) ve FASTA dizisi görüntüleme/kopyalama.
 
 2. **Etkileşimli 3 Boyutlu Yapı Görselleştirme (AlphaFold + 3Dmol.js):**
@@ -36,6 +37,9 @@ BioLens AI; biyoloji ve tıp araştırmacıları, öğrenciler ve biyomedikal me
 5. **Hakemli Bilimsel Literatür (Europe PMC / PubMed):**
    - İlgili proteine ve hastalıklara dair en çok atıf alan güncel makaleler.
    - Dergi adı, yayın yılı, yazarlar, atıf sayısı ve genişletilebilir tam özet metinleri (Abstract).
+
+6. **Kapsamlı Biyomedikal Araştırma Raporu Çıktısı (.md):**
+   - İncelenen proteinin UniProt işlevini, AlphaFold yapı skorlarını, ClinVar mutasyon tablosunu, Türkçe AI değerlendirmesini ve literatür kaynaklarını tek tıkla yapılandırılmış Markdown formatında indirme.
 
 ---
 
