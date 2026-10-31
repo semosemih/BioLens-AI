@@ -74,12 +74,14 @@ BioLens AI; biyoloji ve tıp araştırmacıları, öğrenciler ve biyomedikal me
 BioLens AI'ın backend ve frontend servislerini aynı anda başlatmak için proje kök dizininde:
 
 ```bash
-python3 run_app.py
+./run_app
 ```
 
 Bu komut:
 - FastAPI backend servisini `http://127.0.0.1:8000` adresinde başlatır.
-- React frontend arayüzünü `http://localhost:5173` adresinde başlatır.
+- React frontend arayüzünü `http://localhost:3000` adresinde başlatır ve tarayıcıda otomatik açar.
+
+*(macOS Finder üzerinden doğrudan `run_app.command` veya `run_app` dosyasına çift tıklayarak da başlatabilirsiniz.)*
 
 ### Manuel Başlatma
 
@@ -97,7 +99,7 @@ cd frontend
 npm install
 npm run dev
 ```
-*Tarayıcınızda `http://localhost:5173` adresini açın.*
+*Tarayıcınızda `http://localhost:3000` adresini açın.*
 
 ---
 
