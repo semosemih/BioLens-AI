@@ -34,19 +34,24 @@ export default function App() {
   }, []);
 
   // Fetch protein data
-  const fetchProtein = async (query) => {
+  const fetchProtein = async (query, displayLabel = null) => {
+    const cleanQuery = (query || '').trim();
+    if (!cleanQuery) return;
     setLoading(true);
     setError(null);
     setHighlightResidue(null);
+    if (displayLabel) {
+      setCurrentQuery(displayLabel);
+    }
     try {
-      const res = await fetch(`/api/protein/${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/protein/${encodeURIComponent(cleanQuery)}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || `'${query}' bulunamadı. Lütfen geçerli bir gen adı veya accession girin.`);
+        throw new Error(errData.detail || `'${displayLabel || cleanQuery}' bulunamadı. Lütfen geçerli bir gen adı veya accession girin.`);
       }
       const data = await res.json();
       setProteinData(data);
-      setCurrentQuery(data.geneSymbol || query);
+      setCurrentQuery(data.geneSymbol || displayLabel || cleanQuery);
     } catch (err) {
       console.error('Fetch protein error:', err);
       setError(err.message);

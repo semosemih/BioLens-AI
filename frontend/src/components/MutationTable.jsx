@@ -1,6 +1,43 @@
 import React, { useState } from 'react';
 import { AlertTriangle, ExternalLink, Target, Filter, Search, Dna } from 'lucide-react';
 
+const AA_3_TO_1 = {
+  ala: 'a', arg: 'r', asn: 'n', asp: 'd', cys: 'c',
+  gln: 'q', glu: 'e', gly: 'g', his: 'h', ile: 'i',
+  leu: 'l', lys: 'k', met: 'm', phe: 'f', pro: 'p',
+  ser: 's', thr: 't', trp: 'w', tyr: 'y', val: 'v',
+  ter: '*', stop: '*'
+};
+
+function normalizeMutationText(str) {
+  if (!str) return '';
+  return str
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'i')
+    .replace(/ı/g, 'i')
+    .replace(/Ş/g, 's')
+    .replace(/ş/g, 's')
+    .replace(/Ğ/g, 'g')
+    .replace(/ğ/g, 'g')
+    .replace(/Ü/g, 'u')
+    .replace(/ü/g, 'u')
+    .replace(/Ö/g, 'o')
+    .replace(/ö/g, 'o')
+    .replace(/Ç/g, 'c')
+    .replace(/ç/g, 'c')
+    .toLowerCase()
+    .trim();
+}
+
+function toShortVariantCode(str) {
+  if (!str) return '';
+  let s = str.toLowerCase().replace(/^p\./, '');
+  Object.entries(AA_3_TO_1).forEach(([three, one]) => {
+    s = s.replace(new RegExp(three, 'g'), one);
+  });
+  return s;
+}
+
 export default function MutationTable({ clinvarVariants, uniprotVariants, onSelectResidue, activeResidue }) {
   const [filterType, setFilterType] = useState('all'); // all, clinvar, uniprot
   const [searchFilter, setSearchFilter] = useState('');
@@ -40,12 +77,20 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
   const filtered = combinedList.filter(item => {
     if (filterType === 'clinvar' && item.source !== 'ClinVar') return false;
     if (filterType === 'uniprot' && item.source !== 'UniProt') return false;
-    if (searchFilter) {
-      const q = searchFilter.toLowerCase();
-      const matchChange = item.change && item.change.toLowerCase().includes(q);
-      const matchDisease = item.disease && item.disease.toLowerCase().includes(q);
-      const matchPos = item.position && item.position.toString().includes(q);
-      if (!matchChange && !matchDisease && !matchPos) return false;
+    if (searchFilter.trim()) {
+      const q = normalizeMutationText(searchFilter);
+      const qShort = toShortVariantCode(q);
+      const changeNorm = normalizeMutationText(item.change);
+      const changeShort = toShortVariantCode(changeNorm);
+      const diseaseNorm = normalizeMutationText(item.disease);
+      const sigNorm = normalizeMutationText(item.significance);
+      const posStr = item.position ? item.position.toString() : '';
+
+      const matchChange = changeNorm.includes(q) || (qShort.length >= 2 && changeShort.includes(qShort));
+      const matchDisease = diseaseNorm.includes(q);
+      const matchSig = sigNorm.includes(q);
+      const matchPos = posStr.includes(q);
+      if (!matchChange && !matchDisease && !matchSig && !matchPos) return false;
     }
     return true;
   });
