@@ -1256,6 +1256,8 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
     functions = []
     subcellular_locations = []
     diseases = []
+    general_disease_notes = []
+    pharmaceutical_notes = []
     pathways = []
     
     for comment in entry.get("comments", []):
@@ -1279,33 +1281,78 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
                 d_desc = d_desc_obj.get("value", "")
             elif isinstance(d_desc_obj, str):
                 d_desc = d_desc_obj
+            d_desc = re.sub(r"\s*\(PubMed:[^)]+\)", "", d_desc).strip()
+
+            xref = disease_obj.get("diseaseCrossReference") or {}
+            omim_id = xref.get("id", "") if xref.get("database") == "MIM" else ""
             
             note_obj = comment.get("note") or {}
             note_texts = note_obj.get("texts", []) if isinstance(note_obj, dict) else []
-            d_text = " ".join([t.get("value", "") for t in note_texts if isinstance(t, dict)]) if note_texts else d_desc
-            
-            diseases.append({
-                "diseaseId": d_name or "Klinik Patoloji",
-                "description": d_text or d_desc,
-                "acronym": disease_obj.get("acronym", "")
-            })
+            raw_notes = [
+                re.sub(r"\s*\(PubMed:[^)]+\)", "", t.get("value", "")).strip()
+                for t in note_texts if isinstance(t, dict) and t.get("value")
+            ]
+            # Filter out generic boilerplate sentence when building mechanism note
+            meaningful_notes = [
+                n for n in raw_notes
+                if n.lower() != "the disease is caused by variants affecting the gene represented in this entry."
+            ]
+            mech_note = " ".join(meaningful_notes).strip()
+
+            if d_name:
+                diseases.append({
+                    "diseaseId": d_name,
+                    "description": d_desc or mech_note,
+                    "mechanismNote": mech_note,
+                    "acronym": disease_obj.get("acronym", ""),
+                    "omimId": omim_id
+                })
+            elif mech_note or d_desc:
+                general_disease_notes.append(mech_note or d_desc)
+        elif c_type == "PHARMACEUTICAL":
+            for text_obj in comment.get("texts", []):
+                p_val = re.sub(r"\s*\(PubMed:[^)]+\)", "", text_obj.get("value", "")).strip()
+                if p_val:
+                    pharmaceutical_notes.append(p_val)
         elif c_type == "PATHWAY":
             for text_obj in comment.get("texts", []):
                 pathways.append(text_obj.get("value", ""))
 
-    # Gene Ontology (GO terms)
+    # Cross-references: Gene Ontology (GO), Orphanet, Ensembl, DrugBank, Reactome
     go_terms = {"biological_process": [], "molecular_function": [], "cellular_component": []}
+    orphanet_diseases = []
+    drugs = []
+    ensembl_id = ""
+
     for ref in entry.get("uniProtKBCrossReferences", []):
-        if ref.get("database") == "GO":
-            go_id = ref.get("id", "")
-            properties = {p.get("key"): p.get("value") for p in ref.get("properties", [])}
+        db = ref.get("database", "")
+        ref_id = ref.get("id", "")
+        properties = {p.get("key"): p.get("value") for p in ref.get("properties", []) if isinstance(p, dict)}
+
+        if db == "GO":
             term_str = properties.get("GoTerm", "")
             if term_str.startswith("P:"):
-                go_terms["biological_process"].append({"id": go_id, "name": term_str[2:]})
+                go_terms["biological_process"].append({"id": ref_id, "name": term_str[2:]})
             elif term_str.startswith("F:"):
-                go_terms["molecular_function"].append({"id": go_id, "name": term_str[2:]})
+                go_terms["molecular_function"].append({"id": ref_id, "name": term_str[2:]})
             elif term_str.startswith("C:"):
-                go_terms["cellular_component"].append({"id": go_id, "name": term_str[2:]})
+                go_terms["cellular_component"].append({"id": ref_id, "name": term_str[2:]})
+        elif db == "Orphanet":
+            o_disease = properties.get("Disease", "")
+            if o_disease:
+                orphanet_diseases.append({"orphaId": ref_id, "name": o_disease})
+        elif db == "Ensembl" and not ensembl_id:
+            gene_id = properties.get("GeneId", "")
+            if gene_id:
+                ensembl_id = gene_id.split(".")[0]
+        elif db == "DrugBank":
+            drug_name = properties.get("GenericName", "")
+            if drug_name:
+                drugs.append({"id": ref_id, "name": drug_name})
+        elif db == "Reactome" and len(pathways) < 8:
+            p_name = properties.get("PathwayName", "")
+            if p_name and p_name not in pathways:
+                pathways.append(p_name)
 
     # Natural variants & Mutagenesis
     variants = []
@@ -1337,23 +1384,29 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "accession": acc,
         "entryName": id_name,
+        "ensemblId": ensembl_id,
         "geneSymbol": primary_gene,
         "synonyms": genes,
         "proteinName": rec_name or primary_gene,
-        "alternativeNames": alt_names[:4],
+        "alternativeNames": alt_names[:6],
         "organism": organism,
         "commonOrganism": common_organism,
         "length": length,
         "mass": mass,
         "sequence": sequence,
         "functions": functions,
-        "subcellularLocations": list(dict.fromkeys(subcellular_locations))[:6],
+        "subcellularLocations": list(dict.fromkeys(subcellular_locations))[:8],
         "diseases": diseases,
-        "pathways": pathways[:4],
+        "generalDiseaseNotes": general_disease_notes,
+        "orphanetDiseases": orphanet_diseases,
+        "drugs": drugs[:20],
+        "pharmaceuticalNotes": pharmaceutical_notes,
+        "pathways": pathways[:6],
         "goTerms": {
-            "biologicalProcess": go_terms["biological_process"][:8],
-            "molecularFunction": go_terms["molecular_function"][:8],
-            "cellularComponent": go_terms["cellular_component"][:8]
+            "biologicalProcess": go_terms["biological_process"][:10],
+            "molecularFunction": go_terms["molecular_function"][:10],
+            "cellularComponent": go_terms["cellular_component"][:10]
         },
-        "variants": variants[:25]
+        "variants": variants[:50],
+        "allVariants": variants
     }

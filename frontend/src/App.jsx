@@ -4,6 +4,7 @@ import ProteinOverview from './components/ProteinOverview';
 import ProteinViewer3D from './components/ProteinViewer3D';
 import AlphaFoldConfidenceCard from './components/AlphaFoldConfidenceCard';
 import AISummaryCard from './components/AISummaryCard';
+import DiseaseSpectrumSection from './components/DiseaseSpectrumSection';
 import MutationTable from './components/MutationTable';
 import LiteratureSection from './components/LiteratureSection';
 import { Sparkles, Dna, GitPullRequest, ArrowRight, ShieldCheck, Database, Cpu, Compass } from 'lucide-react';
@@ -194,6 +195,13 @@ export default function App() {
             <AISummaryCard
               aiSummary={proteinData.aiSummary}
               geneSymbol={proteinData.geneSymbol}
+            />
+
+            {/* Comprehensive Clinical Disease Spectrum, Syndromes & Pathophysiology */}
+            <DiseaseSpectrumSection
+              diseaseProfile={proteinData.diseaseProfile}
+              geneSymbol={proteinData.geneSymbol}
+              onSelectResidue={handleSelectMutationResidue}
             />
 
             {/* Bottom Row: ClinVar Mutations & Scientific Literature */}

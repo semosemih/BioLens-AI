@@ -4,10 +4,20 @@ from typing import Dict, Any, List
 NCBI_ESEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_ESUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
 
-def get_clinvar_variants(gene_symbol: str, limit: int = 15) -> List[Dict[str, Any]]:
+IGNORE_TRAITS = {
+    "not provided",
+    "not specified",
+    "notprovided",
+    "see cases",
+    "allhighlypenetrant"
+}
+
+
+def get_clinvar_variants(gene_symbol: str, limit: int = 35) -> List[Dict[str, Any]]:
     """
     Query NCBI ClinVar for clinical variants of the specified gene.
-    Focuses on pathogenic, likely pathogenic, and drug-response variants.
+    Focuses on pathogenic, likely pathogenic, and drug-response variants,
+    extracting comprehensive disease/trait associations.
     """
     if not gene_symbol:
         return []
@@ -56,15 +66,37 @@ def get_clinvar_variants(gene_symbol: str, limit: int = 15) -> List[Dict[str, An
             v_info = sum_data.get(uid, {})
             title = v_info.get("title", "")
             
-            # Extract clinical significance
-            germline = v_info.get("germline_classification", {})
-            sig_desc = germline.get("description", "Unknown")
+            # Extract clinical significance across germline, somatic clinical impact, or oncogenicity
+            germline = v_info.get("germline_classification") or {}
+            clin_impact = v_info.get("clinical_impact_classification") or {}
+            oncogenicity = v_info.get("oncogenicity_classification") or {}
+
+            sig_desc = (
+                germline.get("description")
+                or clin_impact.get("description")
+                or oncogenicity.get("description")
+                or "Pathogenic / Clinical"
+            )
+            review_status = (
+                germline.get("review_status")
+                or clin_impact.get("review_status")
+                or oncogenicity.get("review_status")
+                or ""
+            )
             
-            # Associated diseases / traits
+            # Associated diseases / traits across germline and somatic classifications
             traits = []
-            for t in v_info.get("trait_set", []):
-                t_name = t.get("trait_name")
-                if t_name:
+            all_trait_sets = (
+                list(v_info.get("trait_set") or [])
+                + list(germline.get("trait_set") or [])
+                + list(clin_impact.get("trait_set") or [])
+                + list(oncogenicity.get("trait_set") or [])
+            )
+            for t in all_trait_sets:
+                if not isinstance(t, dict):
+                    continue
+                t_name = (t.get("trait_name") or "").strip()
+                if t_name and t_name.lower() not in IGNORE_TRAITS and t_name not in traits:
                     traits.append(t_name)
                     
             # Parse protein change (e.g. p.Arg175His or p.R175H)
@@ -73,7 +105,6 @@ def get_clinvar_variants(gene_symbol: str, limit: int = 15) -> List[Dict[str, An
             if "p." in title:
                 part = title.split("p.")[-1].split(")")[0]
                 p_change = f"p.{part}"
-                # extract numeric position if present
                 digits = "".join([c for c in part if c.isdigit()])
                 if digits:
                     try:
@@ -87,8 +118,8 @@ def get_clinvar_variants(gene_symbol: str, limit: int = 15) -> List[Dict[str, An
                 "proteinChange": p_change,
                 "position": pos,
                 "clinicalSignificance": sig_desc,
-                "conditions": traits[:3],
-                "reviewStatus": germline.get("review_status", ""),
+                "conditions": traits[:6],
+                "reviewStatus": review_status,
                 "clinvarUrl": f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{uid}/"
             })
             

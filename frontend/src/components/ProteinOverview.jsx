@@ -68,30 +68,52 @@ export default function ProteinOverview({ protein, fullData }) {
       report += `- **PDB Koordinat Bağlantısı:** [AlphaFold DB PDB Dosyası](${af.pdbUrl || '#'})\n\n`;
     }
 
-    // 4. Klinik Mutasyonlar (ClinVar)
+    // 4. Kapsamlı Klinik Hastalık Spektrumu, Sendromlar ve Patofizyoloji
+    if (fullData?.diseaseProfile?.diseases && fullData.diseaseProfile.diseases.length > 0) {
+      const dp = fullData.diseaseProfile;
+      report += `## 🩺 4. Kapsamlı Klinik Hastalık Spektrumu ve Patofizyoloji (${dp.diseases.length} Hastalık)\n\n`;
+      dp.diseases.forEach((d, i) => {
+        report += `### 4.${i + 1}. ${d.name}${d.acronym ? ` (${d.acronym})` : ''}\n`;
+        report += `- **Tıbbi Branş:** ${d.category || 'Klinik Patoloji'}\n`;
+        if (d.inheritance) report += `- **Kalıtım / Genetik Mekanizma:** ${d.inheritance}\n`;
+        if (d.omimId) report += `- **OMIM Referansı:** [OMIM #${d.omimId}](https://www.omim.org/entry/${d.omimId})\n`;
+        if (d.orphaId) report += `- **Orphanet Referansı:** [ORPHA:${d.orphaId}](https://www.orpha.net/en/disease/detail/${d.orphaId})\n`;
+        if (d.pathophysiology) report += `- **Patofizyoloji & Klinik Tablo:** ${d.pathophysiology}\n`;
+        if (d.clinicalManagement) report += `- **Klinik Yaklaşım & Hedefli Tedavi:** ${d.clinicalManagement}\n`;
+        if (d.relatedMutations && d.relatedMutations.length > 0) {
+          report += `- **İlişkili Varyantlar:** \`${d.relatedMutations.join('`, `')}\`\n`;
+        }
+        report += `\n`;
+      });
+    }
+
+    // 5. Klinik Mutasyonlar (ClinVar)
     if (fullData?.clinvar && fullData.clinvar.length > 0) {
-      report += `## ⚠️ 4. Klinik Olarak Bildirilen Patojenik Mutasyonlar (ClinVar)\n\n`;
+      report += `## ⚠️ 5. Klinik Olarak Bildirilen Patojenik Mutasyonlar (ClinVar)\n\n`;
       report += `| Pozisyon | Mutasyon / Değişim | Klinik Önem | İlişkili Hastalık / Klinik Durum |\n`;
       report += `| :---: | :--- | :--- | :--- |\n`;
-      fullData.clinvar.slice(0, 15).forEach(v => {
+      fullData.clinvar.slice(0, 20).forEach(v => {
         const pos = v.position || '-';
         const change = v.proteinChange || v.title || '-';
         const sig = v.clinicalSignificance || 'Pathogenic';
         const dis = (v.conditions && v.conditions.length > 0) ? v.conditions.join(', ') : 'Belirtilmemiş';
         report += `| ${pos} | ${change} | ${sig} | ${dis} |\n`;
       });
-      report += `\n*Not: Toplam ${fullData.clinvar.length} ClinVar varyantı tespit edilmiştir; raporda ilk 15 varyant listelenmiştir.*\n\n`;
+      report += `\n*Not: Toplam ${fullData.clinvar.length} ClinVar varyantı tespit edilmiştir.*\n\n`;
     }
 
-    // 5. Biyomedikal Yapay Zekâ Analizi
+    // 6. Biyomedikal Yapay Zekâ Analizi
     if (fullData?.aiSummary) {
-      report += `## 🤖 5. Biyomedikal Yapay Zekâ Sentezi (Türkçe)\n\n`;
+      report += `## 🤖 6. Biyomedikal Yapay Zekâ Sentezi (Türkçe)\n\n`;
       const ai = fullData.aiSummary;
-      if (ai.sections) {
-        if (ai.sections.biologicalRole) report += `### 🧬 Temel Biyolojik Rol\n${ai.sections.biologicalRole}\n\n`;
-        if (ai.sections.clinicalSignificance) report += `### ⚠️ Hastalık ve Klinik İlişkisi\n${ai.sections.clinicalSignificance}\n\n`;
-        if (ai.sections.structureAnalysis) report += `### 🔬 3B Yapı ve AlphaFold Analizi\n${ai.sections.structureAnalysis}\n\n`;
-        if (ai.sections.mutationInsights) report += `### ⚡ Öne Çıkan Mutasyon ve Literatür Bulguları\n${ai.sections.mutationInsights}\n\n`;
+      if (Array.isArray(ai.sections)) {
+        ai.sections.forEach(sec => {
+          report += `### ${sec.title}\n`;
+          (sec.items || []).forEach(it => {
+            report += `- ${it}\n`;
+          });
+          report += `\n`;
+        });
       } else if (ai.content) {
         report += `${ai.content}\n\n`;
       }

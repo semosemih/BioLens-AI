@@ -5,11 +5,12 @@ def generate_turkish_summary(
     protein_data: Dict[str, Any],
     alphafold_data: Optional[Dict[str, Any]],
     clinvar_variants: List[Dict[str, Any]],
-    literature: List[Dict[str, Any]]
+    literature: List[Dict[str, Any]],
+    disease_profile: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Synthesizes complex biochemical data, literature abstracts, and AlphaFold predictions
-    into a clear, structured Turkish biomedical briefing.
+    Synthesizes complex biochemical data, comprehensive clinical disease spectrum,
+    literature abstracts, and AlphaFold predictions into a clear, structured Turkish biomedical briefing.
     Supports Google Gemini if API key is provided, with an intelligent biomedical domain synthesizer fallback.
     """
     gene = protein_data.get("geneSymbol", "")
@@ -20,22 +21,28 @@ def generate_turkish_summary(
     go_bp = [p["name"] for p in protein_data.get("goTerms", {}).get("biologicalProcess", [])]
     subcells = protein_data.get("subcellularLocations", [])
 
+    enriched_diseases = (disease_profile or {}).get("diseases", [])
+
     # Check for Gemini API key
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if api_key:
         try:
             from google import genai
             client = genai.Client(api_key=api_key)
+            disease_prompt_str = "; ".join([
+                f"{d.get('name')} ({d.get('category')}): {d.get('pathophysiology', '')[:180]}"
+                for d in enriched_diseases[:10]
+            ]) or ", ".join([d.get("diseaseId", "") for d in diseases[:8]])
             prompt = f"""
-Sen uzman bir hesaplamalı biyolog ve hekimsin. Aşağıdaki protein ve gen verilerini, AlphaFold 3B yapı tahminini, ClinVar klinik varyasyonlarını ve literatür özetlerini analiz ederek araştırmacılar ve biyomedikal meraklıları için anlaşılır, akıcı, bilimsel olarak tutarlı Türkçe bir özet hazırla.
+Sen uzman bir hesaplamalı biyolog ve tıp doktorusun. Aşağıdaki protein ve gen verilerini, kapsamlı klinik hastalık spektrumunu, AlphaFold 3B yapı tahminini, ClinVar klinik varyasyonlarını ve literatür özetlerini analiz ederek hekimler ve araştırmacılar için anlaşılır, akıcı, bilimsel olarak eksiksiz Türkçe bir özet hazırla.
 
 Protein: {protein_name} ({gene})
 Hücresel Konum: {', '.join(subcells)}
 Biyolojik Süreçler: {', '.join(go_bp[:5])}
 UniProt Fonksiyon Özeti: {' '.join(functions[:2])}
-Hastalıklar: {', '.join([d.get('description', '') for d in diseases[:3]])}
+Kapsamlı İlişkili Hastalıklar ve Sendromlar: {disease_prompt_str}
 AlphaFold Ortalama pLDDT Güven Skoru: {alphafold_data.get('globalMetricValue') if alphafold_data else 'Yok'} ({alphafold_data.get('confidenceTier') if alphafold_data else ''})
-Klinik Mutasyon Örnekleri: {', '.join([v.get('title', '') for v in clinvar_variants[:4]])}
+Klinik Mutasyon Örnekleri: {', '.join([v.get('title', '') for v in clinvar_variants[:6]])}
 Literatür Başlıkları: {', '.join([a.get('title', '') for a in literature[:3]])}
 
 Lütfen yanıtını aşağıdaki 4 ana başlık altında net, profesyonel maddeler halinde oluştur:
@@ -58,7 +65,11 @@ Lütfen yanıtını aşağıdaki 4 ana başlık altında net, profesyonel maddel
             print(f"Gemini generation error, falling back to rule-based synthesizer: {e}")
 
     # Domain-specific scientific Turkish synthesizer fallback
-    return build_rule_based_summary(gene, protein_name, functions, diseases, subcells, go_bp, alphafold_data, clinvar_variants, variants, literature)
+    return build_rule_based_summary(
+        gene, protein_name, functions, diseases, subcells, go_bp,
+        alphafold_data, clinvar_variants, variants, literature, disease_profile
+    )
+
 
 def build_rule_based_summary(
     gene: str,
@@ -70,30 +81,53 @@ def build_rule_based_summary(
     alphafold_data: Optional[Dict[str, Any]],
     clinvar_variants: List[Dict[str, Any]],
     variants: List[Dict[str, Any]],
-    literature: List[Dict[str, Any]]
+    literature: List[Dict[str, Any]],
+    disease_profile: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     
     # 1. Biological Role
     bio_role_points = []
     if functions:
         main_func = functions[0]
-        # Clean up very long text
-        if len(main_func) > 280:
-            main_func = main_func[:277] + "..."
+        if len(main_func) > 300:
+            main_func = main_func[:297] + "..."
         bio_role_points.append(f"{protein_name} ({gene}), hücrede kritik düzenleyici süreçlerde yer alır: {main_func}")
     else:
         bio_role_points.append(f"{gene} geni tarafından kodlanan {protein_name}, temel hücresel homeostaz ve sinyal iletiminde görev yapar.")
 
     if subcells:
-        bio_role_points.append(f"Hücresel yerleşim: Başlıca {', '.join(subcells[:3])} bölgelerinde lokalizedir.")
+        bio_role_points.append(f"Hücresel yerleşim: Başlıca {', '.join(subcells[:4])} bölgelerinde lokalizedir.")
 
     if go_bp:
-        bio_role_points.append(f"İlgili biyolojik yolaklar: {', '.join(go_bp[:4])}.")
+        bio_role_points.append(f"İlgili biyolojik yolaklar: {', '.join(go_bp[:5])}.")
 
-    # 2. Disease Links
+    # 2. Comprehensive Disease Links
     disease_points = []
-    if diseases:
-        for d in diseases[:3]:
+    enriched = (disease_profile or {}).get("diseases", [])
+    specialties = [s["specialty"] for s in (disease_profile or {}).get("specialtyBreakdown", [])]
+
+    if enriched:
+        total_d = len(enriched)
+        spec_str = ", ".join(specialties[:4])
+        disease_points.append(
+            f"**Klinik Spektrum Özeti:** {gene} geni toplam **{total_d} farklı klinik hastalık/sendrom** ile ilişkilendirilmiştir "
+            f"(Başlıca etkilenen branşlar: *{spec_str}*)."
+        )
+        for d in enriched[:4]:
+            d_name = d.get("name") or "Patoloji"
+            d_path = d.get("pathophysiology", "")
+            if len(d_path) > 220:
+                d_path = d_path[:217] + "..."
+            disease_points.append(f"**{d_name}** (*{d.get('category', '')}*): {d_path}")
+        if total_d > 4:
+            other_names = [d.get("name", "").split("(")[0].strip() for d in enriched[4:12] if d.get("name")]
+            if other_names:
+                disease_points.append(
+                    f"**Diğer İlişkili Klinik Tablolar ({total_d - 4} ek hastalık):** {', '.join(other_names)}"
+                    + (" ve diğerleri (tüm detaylar aşağıdaki Klinik Hastalık Spektrumu panelinde listelenmiştir)." if total_d > 12 else ".")
+                )
+    elif diseases:
+        for d in diseases[:5]:
             d_name = d.get("diseaseId") or "Patoloji"
             d_desc = d.get("description", "")
             if d_desc:
@@ -118,10 +152,10 @@ def build_rule_based_summary(
     # 4. Mutations & Literature
     mutation_lit_points = []
     if clinvar_variants:
-        top_vars = [f"{v.get('title', '')} ({v.get('clinicalSignificance', '')})" for v in clinvar_variants[:3]]
-        mutation_lit_points.append(f"ClinVar Veritabanı Bulguları: {'; '.join(top_vars)}.")
+        top_vars = [f"{v.get('title', '')} ({v.get('clinicalSignificance', '')})" for v in clinvar_variants[:4]]
+        mutation_lit_points.append(f"ClinVar Veritabanı Bulguları ({len(clinvar_variants)} klinik varyant): {'; '.join(top_vars)}.")
     elif variants:
-        top_uniprot = [f"{v.get('change')} ({v.get('description')})" for v in variants[:3]]
+        top_uniprot = [f"{v.get('change')} ({v.get('description')})" for v in variants[:4]]
         mutation_lit_points.append(f"UniProt Mutasyon Kayıtları: {'; '.join(top_uniprot)}.")
     else:
         mutation_lit_points.append("Klinik patojenik varyasyonlar veritabanında taranıyor.")
@@ -153,6 +187,7 @@ def build_rule_based_summary(
         "source": "BioLens Biyomedikal Yapay Zekâ Analiz Motoru",
         "sections": sections
     }
+
 
 def parse_llm_sections(text: str) -> List[Dict[str, Any]]:
     sections = []

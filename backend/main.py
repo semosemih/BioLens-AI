@@ -7,6 +7,7 @@ from services.alphafold import get_alphafold_prediction, fetch_pdb_file
 from services.clinvar import get_clinvar_variants
 from services.literature import get_scientific_literature
 from services.summarizer import generate_turkish_summary
+from services.diseases import build_comprehensive_disease_profile
 
 app = FastAPI(
     title="BioLens AI API",
@@ -122,15 +123,19 @@ def get_protein(identifier: str):
     # 2. Fetch ClinVar pathogenic variants
     clinvar_variants = get_clinvar_variants(gene_symbol)
 
-    # 3. Fetch Europe PMC / PubMed scientific papers
+    # 3. Build comprehensive multi-source clinical disease & syndrome profile
+    disease_profile = build_comprehensive_disease_profile(uniprot_data, clinvar_variants)
+
+    # 4. Fetch Europe PMC / PubMed scientific papers
     literature = get_scientific_literature(gene_symbol, protein_name)
 
-    # 4. Generate Turkish AI / Biomedical summary
+    # 5. Generate Turkish AI / Biomedical summary
     ai_summary = generate_turkish_summary(
         protein_data=uniprot_data,
         alphafold_data=alphafold_data,
         clinvar_variants=clinvar_variants,
-        literature=literature
+        literature=literature,
+        disease_profile=disease_profile
     )
 
     return {
@@ -142,6 +147,7 @@ def get_protein(identifier: str):
         "uniprot": uniprot_data,
         "alphafold": alphafold_data,
         "clinvar": clinvar_variants,
+        "diseaseProfile": disease_profile,
         "literature": literature,
         "aiSummary": ai_summary
     }
