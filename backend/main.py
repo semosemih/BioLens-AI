@@ -1,7 +1,7 @@
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
@@ -91,20 +91,22 @@ CURATED_EXAMPLES = [
     }
 ]
 
-@app.get("/api/health")
+router = APIRouter()
+
+@router.get("/health")
 def health_check():
     return {"status": "ok", "service": "BioLens AI Backend", "version": "1.0.0"}
 
-@app.get("/api/examples")
+@router.get("/examples")
 def get_examples():
     return CURATED_EXAMPLES
 
-@app.get("/api/search")
+@router.get("/search")
 def search(q: str = Query(..., min_length=1, description="Protein veya gen adı")):
     hits = search_proteins(q)
     return {"query": q, "count": len(hits), "results": hits}
 
-@app.get("/api/protein/{identifier}")
+@router.get("/protein/{identifier}")
 def get_protein(identifier: str):
     """
     Kullanıcının girdiği gen/protein adı veya accession kodu için tüm bilimsel verileri birleştirir:
@@ -161,7 +163,7 @@ def get_protein(identifier: str):
         "aiSummary": ai_summary
     }
 
-@app.get("/api/pdb/{accession}")
+@router.get("/pdb/{accession}")
 def get_pdb(accession: str, pdb_url: Optional[str] = None):
     """
     AlphaFold PDB koordinat dosyasını çeker ve doğrudan tarayıcıya döndürür (CORS sorunlarını önler).
@@ -177,3 +179,7 @@ def get_pdb(accession: str, pdb_url: Optional[str] = None):
         raise HTTPException(status_code=502, detail="PDB koordinat dosyası AlphaFold sunucularından indirilemedi.")
 
     return Response(content=pdb_content, media_type="chemical/x-pdb")
+
+# Mount under both /api and root so routes work whether or not the proxy/rewrite strips /api
+app.include_router(router, prefix="/api")
+app.include_router(router, prefix="", include_in_schema=False)
