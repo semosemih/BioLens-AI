@@ -1394,7 +1394,9 @@ def build_comprehensive_disease_profile(
                 "orphaId": entry.get("orphaId", ""),
                 "openTargetsScore": entry.get("openTargetsScore"),
                 "pathophysiology": entry.get("pathophysiology", ""),
+                "pathophysiologyEn": entry.get("pathophysiologyEn", ""),
                 "clinicalManagement": entry.get("clinicalManagement", ""),
+                "clinicalManagementEn": entry.get("clinicalManagementEn", ""),
                 "relatedMutations": list(entry.get("relatedMutations", [])),
                 "sources": list(entry.get("sources", []))
             }
@@ -1411,6 +1413,10 @@ def build_comprehensive_disease_profile(
                 existing["openTargetsScore"] = entry["openTargetsScore"]
             if not existing.get("clinicalManagement") and entry.get("clinicalManagement"):
                 existing["clinicalManagement"] = entry["clinicalManagement"]
+            if not existing.get("clinicalManagementEn") and entry.get("clinicalManagementEn"):
+                existing["clinicalManagementEn"] = entry["clinicalManagementEn"]
+            if not existing.get("pathophysiologyEn") and entry.get("pathophysiologyEn"):
+                existing["pathophysiologyEn"] = entry["pathophysiologyEn"]
             if len(entry.get("pathophysiology", "")) > len(existing.get("pathophysiology", "")) and "Klinik Atlas" not in existing.get("sources", []):
                 existing["pathophysiology"] = entry["pathophysiology"]
             for mut in entry.get("relatedMutations", []):
@@ -1445,6 +1451,7 @@ def build_comprehensive_disease_profile(
             "inheritance": infer_inheritance(full_desc),
             "omimId": u_dis.get("omimId", ""),
             "pathophysiology": full_desc or f"{gene} genindeki patojenik varyasyonlarla ilişkili klinik sendrom.",
+            "pathophysiologyEn": full_desc or f"Clinical syndrome associated with pathogenic variants in the {gene} gene.",
             "sources": ["UniProtKB"] + (["OMIM"] if u_dis.get("omimId") else [])
         })
 
@@ -1461,6 +1468,7 @@ def build_comprehensive_disease_profile(
             "inheritance": infer_inheritance(o_name),
             "orphaId": o_id,
             "pathophysiology": f"Orphanet nadir hastalıklar veritabanında {gene} ({protein_name}) geni ile ilişkilendirilmiş klinik antite (OrphaCode: ORPHA:{o_id}).",
+            "pathophysiologyEn": f"Clinical rare disease entity associated with {gene} ({protein_name}) in the Orphanet database (OrphaCode: ORPHA:{o_id}).",
             "sources": ["Orphanet"]
         })
 
@@ -1507,6 +1515,11 @@ def build_comprehensive_disease_profile(
                 f"({sigs_str}) bu hastalık/fenotip ile doğrudan ilişkilendirilmiştir"
                 + (f" (Örnek mutasyonlar: {', '.join(mut_list[:4])})." if mut_list else ".")
             ),
+            "pathophysiologyEn": (
+                f"In the NCBI ClinVar clinical genetics database, {c_info['count']} variant(s) in {gene} "
+                f"({sigs_str}) are directly associated with this condition/phenotype"
+                + (f" (Representative variants: {', '.join(mut_list[:4])})." if mut_list else ".")
+            ),
             "relatedMutations": mut_list,
             "sources": ["ClinVar"]
         })
@@ -1529,6 +1542,10 @@ def build_comprehensive_disease_profile(
                 f"saptandığı klinik patoloji"
                 + (f" (Kaydedilen varyantlar: {', '.join(muts[:4])})." if muts else ".")
             ),
+            "pathophysiologyEn": (
+                f"Clinical pathology reported in UniProtKB natural variant and somatic tumor spectrum records for {gene}"
+                + (f" (Recorded variants: {', '.join(muts[:4])})." if muts else ".")
+            ),
             "relatedMutations": muts,
             "sources": ["UniProt Varyant"]
         })
@@ -1550,6 +1567,11 @@ def build_comprehensive_disease_profile(
                     f"{ot_desc} (Open Targets Klinik İlişki Skoru: {ot['score']})"
                     if ot_desc
                     else f"Open Targets Platformu klinik/genomik kanıt veritabanında {gene} ({protein_name}) ile ilişkilendirilmiş patoloji (Kanıt Skoru: {ot['score']})."
+                ),
+                "pathophysiologyEn": (
+                    f"{ot_desc} (Open Targets Clinical Association Score: {ot['score']})"
+                    if ot_desc
+                    else f"Pathology associated with {gene} ({protein_name}) in the Open Targets clinical/genomic evidence platform (Evidence Score: {ot['score']})."
                 ),
                 "sources": ["OpenTargets"]
             })
@@ -1580,17 +1602,62 @@ def build_comprehensive_disease_profile(
             return "İç Hastalıkları & Organ Sistemleri"
         return cat_str or "Klinik Patoloji"
 
+    specialty_en_map = {
+        "Tıbbi Onkoloji": "Medical Oncology",
+        "Hematoloji": "Hematology",
+        "Tıbbi Genetik": "Medical Genetics",
+        "Endokrinoloji & Metabolizma": "Endocrinology & Metabolism",
+        "Nöroloji": "Neurology",
+        "Kardiyoloji": "Cardiology",
+        "Göğüs Hastalıkları": "Pulmonology",
+        "İmmünoloji & Romatoloji": "Immunology & Rheumatology",
+        "Enfeksiyon Hastalıkları": "Infectious Diseases",
+        "İç Hastalıkları & Organ Sistemleri": "Internal Medicine & Organ Systems",
+        "Klinik Patoloji": "Clinical Pathology"
+    }
+
+    def translate_inheritance_en(inh_str: str) -> str:
+        if not inh_str:
+            return ""
+        res = inh_str
+        replacements = [
+            ("Otozomal Dominant", "Autosomal Dominant"),
+            ("Otozomal Resesif", "Autosomal Recessive"),
+            ("X'e Bağlı", "X-Linked"),
+            ("Somatik / Germline Varyant", "Somatic / Germline Variant"),
+            ("Somatik veya Germline", "Somatic or Germline"),
+            ("Somatik", "Somatic"),
+            ("Kalıtsal", "Hereditary"),
+            ("Multifaktöriyel", "Multifactorial"),
+            ("Poligenik", "Polygenic"),
+            ("Ko-dominant", "Co-dominant"),
+            ("Varyant", "Variant")
+        ]
+        for tr_k, en_v in replacements:
+            res = res.replace(tr_k, en_v)
+        return res
+
     # Group counts by normalized primary medical specialty for clinical dashboard filter tabs
     specialty_counts: Dict[str, int] = {}
     for d in all_diseases:
         prim = normalize_primary_specialty(d.get("category", "Klinik Patoloji"))
+        prim_en = specialty_en_map.get(prim, "Clinical Pathology")
         d["primarySpecialty"] = prim
+        d["primarySpecialtyEn"] = prim_en
+        d["categoryEn"] = prim_en
+        d["inheritanceEn"] = translate_inheritance_en(d.get("inheritance", ""))
+        if not d.get("pathophysiologyEn"):
+            mut_note = f" Notable associated variants include {', '.join(d['relatedMutations'][:4])}." if d.get("relatedMutations") else ""
+            omim_note = f" (OMIM #{d['omimId']})" if d.get("omimId") else ""
+            d["pathophysiologyEn"] = (
+                f"{d.get('englishName') or d.get('name')} is a {prim_en.lower()} condition associated with pathogenic alterations or dysregulation in {gene} ({protein_name}){omim_note}.{mut_note}"
+            )
         specialty_counts[prim] = specialty_counts.get(prim, 0) + 1
 
     return {
         "totalCount": len(all_diseases),
         "specialtyBreakdown": [
-            {"specialty": k, "count": v}
+            {"specialty": k, "specialtyEn": specialty_en_map.get(k, k), "count": v}
             for k, v in sorted(specialty_counts.items(), key=lambda x: -x[1])
         ],
         "generalClinicalNotes": uniprot_data.get("generalDiseaseNotes", []),

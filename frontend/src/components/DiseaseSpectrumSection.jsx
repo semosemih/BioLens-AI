@@ -80,7 +80,8 @@ function getSpecialtyStyle(specialty) {
 export default function DiseaseSpectrumSection({
   diseaseProfile,
   geneSymbol,
-  onSelectResidue
+  onSelectResidue,
+  lang = 'en'
 }) {
   const [selectedSpecialty, setSelectedSpecialty] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -165,14 +166,18 @@ export default function DiseaseSpectrumSection({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>
-                Kapsamlı Klinik Hastalık Spektrumu, Sendromlar & Patofizyoloji
+                {lang === 'en'
+                  ? 'Comprehensive Clinical Disease Spectrum, Syndromes & Pathophysiology'
+                  : 'Kapsamlı Klinik Hastalık Spektrumu, Sendromlar & Patofizyoloji'}
               </h3>
               <span className="badge badge-rose" style={{ fontSize: '0.72rem', padding: '3px 10px' }}>
-                {diseases.length} Klinik Hastalık / Sendrom
+                {diseases.length} {lang === 'en' ? 'Clinical Conditions / Syndromes' : 'Klinik Hastalık / Sendrom'}
               </span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '3px' }}>
-              {geneSymbol} ile ilişkili onkolojik, kalıtsal (OMIM / Orphanet), metabolik, nörolojik ve sistemik patolojilerin çok kaynaklı klinik sentezi
+              {lang === 'en'
+                ? `Multi-source clinical synthesis of oncological, hereditary (OMIM / Orphanet), metabolic, neurological, and systemic pathologies associated with ${geneSymbol}`
+                : `${geneSymbol} ile ilişkili onkolojik, kalıtsal (OMIM / Orphanet), metabolik, nörolojik ve sistemik patolojilerin çok kaynaklı klinik sentezi`}
             </p>
           </div>
         </div>
@@ -193,7 +198,7 @@ export default function DiseaseSpectrumSection({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Hastalık, sendrom, ilaç veya OMIM ara..."
+            placeholder={lang === 'en' ? 'Search disease, syndrome, drug or OMIM...' : 'Hastalık, sendrom, ilaç veya OMIM ara...'}
             style={{
               width: '100%',
               background: 'rgba(6, 9, 17, 0.75)',
@@ -218,7 +223,7 @@ export default function DiseaseSpectrumSection({
       }}>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
           <Layers size={13} />
-          Tıbbi Branş Filtresi:
+          {lang === 'en' ? 'Medical Specialty Filter:' : 'Tıbbi Branş Filtresi:'}
         </span>
         <button
           onClick={() => setSelectedSpecialty('ALL')}
@@ -234,12 +239,13 @@ export default function DiseaseSpectrumSection({
             transition: 'all 0.15s'
           }}
         >
-          Tümü ({diseases.length})
+          {lang === 'en' ? `All (${diseases.length})` : `Tümü (${diseases.length})`}
         </button>
 
         {specialtyBreakdown.map((item, idx) => {
           const isSelected = selectedSpecialty === item.specialty;
           const style = getSpecialtyStyle(item.specialty);
+          const displaySpec = lang === 'en' ? (item.specialtyEn || item.specialty) : item.specialty;
           return (
             <button
               key={idx}
@@ -256,7 +262,7 @@ export default function DiseaseSpectrumSection({
                 transition: 'all 0.15s'
               }}
             >
-              {item.specialty} ({item.count})
+              {displaySpec} ({item.count})
             </button>
           );
         })}
@@ -277,7 +283,9 @@ export default function DiseaseSpectrumSection({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600, color: '#34d399' }}>
               <Pill size={15} />
-              Hedefe Yönelik İlaç & Farmakolojik Ajanlar (DrugBank / UniProt):
+              {lang === 'en'
+                ? 'Targeted Drugs & Pharmacological Agents (DrugBank / UniProt):'
+                : 'Hedefe Yönelik İlaç & Farmakolojik Ajanlar (DrugBank / UniProt):'}
             </span>
             {targetedDrugs.slice(0, 12).map((drug, idx) => (
               <a
@@ -316,7 +324,9 @@ export default function DiseaseSpectrumSection({
       {/* Disease Cards Grid */}
       {visibleDiseases.length === 0 ? (
         <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-          Arama kriterlerine uygun klinik hastalık kaydı bulunamadı.
+          {lang === 'en'
+            ? 'No matching clinical disease records found.'
+            : 'Arama kriterlerine uygun klinik hastalık kaydı bulunamadı.'}
         </div>
       ) : (
         <div style={{
@@ -326,6 +336,12 @@ export default function DiseaseSpectrumSection({
         }}>
           {visibleDiseases.map((disease, idx) => {
             const specStyle = getSpecialtyStyle(disease.category);
+            const displayCategory = lang === 'en' ? (disease.categoryEn || disease.primarySpecialtyEn || disease.category) : disease.category;
+            const displayInheritance = lang === 'en' ? (disease.inheritanceEn || disease.inheritance) : disease.inheritance;
+            const displayPrimaryTitle = lang === 'en' ? (disease.englishName || disease.name) : disease.name;
+            const displaySecondaryTitle = lang === 'en' ? disease.name : disease.englishName;
+            const displayPatho = lang === 'en' ? (disease.pathophysiologyEn || disease.pathophysiology) : disease.pathophysiology;
+            const displayManagement = lang === 'en' ? (disease.clinicalManagementEn || disease.clinicalManagement) : disease.clinicalManagement;
 
             return (
               <div
@@ -354,11 +370,11 @@ export default function DiseaseSpectrumSection({
                       fontSize: '0.7rem',
                       fontWeight: 600
                     }}>
-                      {disease.category}
+                      {displayCategory}
                     </span>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      {disease.inheritance && (
+                      {displayInheritance && (
                         <span style={{
                           background: 'rgba(255, 255, 255, 0.05)',
                           border: '1px solid var(--border-subtle)',
@@ -367,7 +383,7 @@ export default function DiseaseSpectrumSection({
                           borderRadius: '6px',
                           fontSize: '0.68rem'
                         }}>
-                          {disease.inheritance}
+                          {displayInheritance}
                         </span>
                       )}
                       {disease.acronym && (
@@ -387,21 +403,21 @@ export default function DiseaseSpectrumSection({
 
                   {/* Disease Name */}
                   <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#f8fafc', lineHeight: 1.35, marginBottom: '4px' }}>
-                    {disease.name}
+                    {displayPrimaryTitle}
                   </h4>
-                  {disease.englishName && disease.englishName.toLowerCase() !== disease.name.toLowerCase() && (
+                  {displaySecondaryTitle && displaySecondaryTitle.toLowerCase() !== displayPrimaryTitle.toLowerCase() && (
                     <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '8px', fontStyle: 'italic' }}>
-                      {disease.englishName}
+                      {displaySecondaryTitle}
                     </div>
                   )}
 
                   {/* Pathophysiology Description */}
                   <p style={{ fontSize: '0.83rem', color: 'var(--text-primary)', lineHeight: 1.55, marginTop: '6px' }}>
-                    {disease.pathophysiology}
+                    {displayPatho}
                   </p>
 
                   {/* Clinical Management / Targeted Therapy Box */}
-                  {disease.clinicalManagement && (
+                  {displayManagement && (
                     <div style={{
                       marginTop: '10px',
                       background: 'rgba(14, 165, 233, 0.08)',
@@ -414,9 +430,9 @@ export default function DiseaseSpectrumSection({
                     }}>
                       <strong style={{ color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '4px', marginRight: '6px' }}>
                         <Activity size={12} />
-                        Klinik Yaklaşım & Hedefli Tedavi:
+                        {lang === 'en' ? 'Clinical Management & Targeted Therapy:' : 'Klinik Yaklaşım & Hedefli Tedavi:'}
                       </strong>
-                      {disease.clinicalManagement}
+                      {displayManagement}
                     </div>
                   )}
                 </div>
@@ -432,14 +448,14 @@ export default function DiseaseSpectrumSection({
                   {disease.relatedMutations && disease.relatedMutations.length > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '5px' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginRight: '2px' }}>
-                        İlişkili Varyantlar:
+                        {lang === 'en' ? 'Associated Variants:' : 'İlişkili Varyantlar:'}
                       </span>
                       {disease.relatedMutations.slice(0, 5).map((mut, mIdx) => (
                         <button
                           key={mIdx}
                           type="button"
                           onClick={() => handleMutationClick(mut)}
-                          title="3B yapıda bu mutasyon kalıntısına odaklan"
+                          title={lang === 'en' ? 'Focus on this variant residue in 3D structure' : '3B yapıda bu mutasyon kalıntısına odaklan'}
                           className="font-mono"
                           style={{
                             background: 'rgba(244, 63, 94, 0.12)',
@@ -474,7 +490,11 @@ export default function DiseaseSpectrumSection({
                             borderRadius: '4px'
                           }}
                         >
-                          {src}
+                          {lang === 'en' && src === 'Klinik Rehber'
+                            ? 'Clinical Guideline'
+                            : lang === 'en' && src === 'UniProt Varyant'
+                            ? 'UniProt Variant'
+                            : src}
                         </span>
                       ))}
                     </div>
@@ -551,12 +571,16 @@ export default function DiseaseSpectrumSection({
             {showAll ? (
               <>
                 <ChevronUp size={16} />
-                <span>Görünümü Daralt</span>
+                <span>{lang === 'en' ? 'Collapse View' : 'Görünümü Daralt'}</span>
               </>
             ) : (
               <>
                 <ChevronDown size={16} />
-                <span>Tüm İlişkili Hastalıkları ve Sendromları Göster ({filteredDiseases.length} Hastalık)</span>
+                <span>
+                  {lang === 'en'
+                    ? `Show All Associated Diseases & Syndromes (${filteredDiseases.length} Conditions)`
+                    : `Tüm İlişkili Hastalıkları ve Sendromları Göster (${filteredDiseases.length} Hastalık)`}
+                </span>
               </>
             )}
           </button>
@@ -576,7 +600,9 @@ export default function DiseaseSpectrumSection({
           lineHeight: 1.55
         }}>
           <strong style={{ color: '#f8fafc', display: 'block', marginBottom: '4px' }}>
-            📋 Ek Klinik ve Somatik Tümör Spektrumu Notu (UniProtKB):
+            {lang === 'en'
+              ? '📋 Additional Clinical & Somatic Tumor Spectrum Note (UniProtKB):'
+              : '📋 Ek Klinik ve Somatik Tümör Spektrumu Notu (UniProtKB):'}
           </strong>
           {generalClinicalNotes.join(' ')}
         </div>

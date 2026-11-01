@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dna, MapPin, Tag, Copy, Check, ChevronDown, ChevronUp, Layers, FileDown } from 'lucide-react';
 
-export default function ProteinOverview({ protein, fullData }) {
+export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
   const [showFasta, setShowFasta] = useState(false);
   const [copiedFasta, setCopiedFasta] = useState(false);
 
@@ -164,7 +164,7 @@ export default function ProteinOverview({ protein, fullData }) {
             {proteinName}
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {organism} • {length} Amino Asit • {(mass ? (mass / 1000).toFixed(1) + ' kDa' : '--')}
+            {organism} • {length} {lang === 'en' ? 'Amino Acids' : 'Amino Asit'} • {(mass ? (mass / 1000).toFixed(1) + ' kDa' : '--')}
           </p>
         </div>
 
@@ -172,7 +172,7 @@ export default function ProteinOverview({ protein, fullData }) {
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <button
             onClick={handleExportReport}
-            title="Kapsamlı Araştırma Raporunu Markdown formatında indir"
+            title={lang === 'en' ? 'Download comprehensive research report in Markdown format' : 'Kapsamlı Araştırma Raporunu Markdown formatında indir'}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -189,7 +189,7 @@ export default function ProteinOverview({ protein, fullData }) {
             }}
           >
             <FileDown size={15} />
-            <span>Raporu İndir (.md)</span>
+            <span>{lang === 'en' ? 'Download Report (.md)' : 'Raporu İndir (.md)'}</span>
           </button>
 
           <button
@@ -209,7 +209,7 @@ export default function ProteinOverview({ protein, fullData }) {
             }}
           >
             <Dna size={15} />
-            <span>FASTA Dizisi</span>
+            <span>{lang === 'en' ? 'FASTA Sequence' : 'FASTA Dizisi'}</span>
             {showFasta ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>
@@ -244,7 +244,9 @@ export default function ProteinOverview({ protein, fullData }) {
               }}
             >
               {copiedFasta ? <Check size={12} /> : <Copy size={12} />}
-              {copiedFasta ? 'Kopyalandı' : 'Kopyala'}
+              {copiedFasta
+                ? (lang === 'en' ? 'Copied' : 'Kopyalandı')
+                : (lang === 'en' ? 'Copy' : 'Kopyala')}
             </button>
           </div>
           <div style={{
@@ -266,7 +268,7 @@ export default function ProteinOverview({ protein, fullData }) {
       {functions && functions.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
           <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
-            Biyolojik İşlev Açıklaması
+            {lang === 'en' ? 'Biological Function' : 'Biyolojik İşlev Açıklaması'}
           </h4>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.6, background: 'rgba(255, 255, 255, 0.02)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
             {functions[0]}
@@ -279,7 +281,7 @@ export default function ProteinOverview({ protein, fullData }) {
         <div style={{ marginBottom: '18px' }}>
           <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={14} />
-            Hücresel Yerleşim (Subcellular Location)
+            {lang === 'en' ? 'Subcellular Location' : 'Hücresel Yerleşim (Subcellular Location)'}
           </h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {subcellularLocations.map((loc, idx) => (
@@ -307,7 +309,7 @@ export default function ProteinOverview({ protein, fullData }) {
         <div>
           <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Layers size={14} />
-            Gen Ontolojisi (Gene Ontology - Biyolojik Süreçler)
+            {lang === 'en' ? 'Gene Ontology (Biological Processes)' : 'Gen Ontolojisi (Gene Ontology - Biyolojik Süreçler)'}
           </h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {goTerms.biologicalProcess && goTerms.biologicalProcess.slice(0, 6).map((term, idx) => (

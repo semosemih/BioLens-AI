@@ -23,6 +23,12 @@ def generate_turkish_summary(
 
     enriched_diseases = (disease_profile or {}).get("diseases", [])
 
+    # Build English & Turkish rule-based summaries so both languages are always available instantly
+    base_summary = build_rule_based_summary(
+        gene, protein_name, functions, diseases, subcells, go_bp,
+        alphafold_data, clinvar_variants, variants, literature, disease_profile
+    )
+
     # Check for Gemini API key
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if api_key:
@@ -58,17 +64,16 @@ Lütfen yanıtını aşağıdaki 4 ana başlık altında net, profesyonel maddel
             if response.text:
                 return {
                     "source": "Gemini AI Biyomedikal Analiz Modeli",
+                    "sourceEn": "Gemini AI Biomedical Analysis Engine",
                     "content": response.text,
-                    "sections": parse_llm_sections(response.text)
+                    "sections": parse_llm_sections(response.text),
+                    "sectionsEn": base_summary["sectionsEn"]
                 }
         except Exception as e:
             print(f"Gemini generation error, falling back to rule-based synthesizer: {e}")
 
-    # Domain-specific scientific Turkish synthesizer fallback
-    return build_rule_based_summary(
-        gene, protein_name, functions, diseases, subcells, go_bp,
-        alphafold_data, clinvar_variants, variants, literature, disease_profile
-    )
+    # Domain-specific scientific bilingual synthesizer fallback
+    return base_summary
 
 
 def build_rule_based_summary(
@@ -183,9 +188,103 @@ def build_rule_based_summary(
         }
     ]
 
+    # Build English sections in parallel
+    bio_role_en = []
+    if functions:
+        main_func_en = functions[0]
+        if len(main_func_en) > 300:
+            main_func_en = main_func_en[:297] + "..."
+        bio_role_en.append(f"{protein_name} ({gene}) plays a key regulatory role in cellular pathways: {main_func_en}")
+    else:
+        bio_role_en.append(f"Encoded by the {gene} gene, {protein_name} mediates core cellular homeostasis and signaling pathways.")
+    if subcells:
+        bio_role_en.append(f"Subcellular localization: Primarily localized to {', '.join(subcells[:4])}.")
+    if go_bp:
+        bio_role_en.append(f"Associated biological processes: {', '.join(go_bp[:5])}.")
+
+    disease_points_en = []
+    specialties_en = [s.get("specialtyEn") or s["specialty"] for s in (disease_profile or {}).get("specialtyBreakdown", [])]
+    if enriched:
+        total_d = len(enriched)
+        spec_en_str = ", ".join(specialties_en[:4])
+        disease_points_en.append(
+            f"**Clinical Spectrum Summary:** {gene} is associated with **{total_d} distinct clinical conditions/syndromes** "
+            f"(Primary medical specialties: *{spec_en_str}*)."
+        )
+        for d in enriched[:4]:
+            d_name_en = d.get("englishName") or d.get("name") or "Clinical Pathology"
+            d_cat_en = d.get("categoryEn") or d.get("primarySpecialtyEn") or d.get("category", "")
+            d_path_en = d.get("pathophysiologyEn") or d.get("pathophysiology", "")
+            if len(d_path_en) > 220:
+                d_path_en = d_path_en[:217] + "..."
+            disease_points_en.append(f"**{d_name_en}** (*{d_cat_en}*): {d_path_en}")
+        if total_d > 4:
+            other_names_en = [(d.get("englishName") or d.get("name", "")).split("(")[0].strip() for d in enriched[4:12] if (d.get("englishName") or d.get("name"))]
+            if other_names_en:
+                disease_points_en.append(
+                    f"**Additional Associated Conditions ({total_d - 4} more):** {', '.join(other_names_en)}"
+                    + (" and others (see full Clinical Disease Spectrum panel below)." if total_d > 12 else ".")
+                )
+    elif diseases:
+        for d in diseases[:5]:
+            d_name = d.get("diseaseId") or "Pathology"
+            d_desc = d.get("description", "")
+            if d_desc:
+                disease_points_en.append(f"**{d_name}**: {d_desc}")
+            else:
+                disease_points_en.append(f"Directly associated with **{d_name}**.")
+    else:
+        disease_points_en.append(f"Mutations and expression alterations in {gene} are linked to diverse phenotypic pathologies and clinical disorders.")
+
+    structure_points_en = []
+    if alphafold_data:
+        plddt = alphafold_data.get("globalMetricValue", "Unknown")
+        tier_en = alphafold_data.get("confidenceTierEn") or alphafold_data.get("confidenceTier", "")
+        desc_en = alphafold_data.get("confidenceDescEn") or alphafold_data.get("confidenceDesc", "")
+        structure_points_en.append(f"AlphaFold 3D Structure Confidence Score: **{plddt} / 100** ({tier_en}).")
+        structure_points_en.append(desc_en)
+        structure_points_en.append("In pLDDT coloring, dark/light blue regions indicate rigid, well-folded tertiary domains, while yellow/orange segments denote flexible loops or intrinsically disordered regions (IDRs).")
+    else:
+        structure_points_en.append("Awaiting structural coordinate mapping in the AlphaFold database.")
+
+    mutation_lit_en = []
+    if clinvar_variants:
+        top_vars = [f"{v.get('title', '')} ({v.get('clinicalSignificance', '')})" for v in clinvar_variants[:4]]
+        mutation_lit_en.append(f"ClinVar Database Findings ({len(clinvar_variants)} clinical variants): {'; '.join(top_vars)}.")
+    elif variants:
+        top_uniprot = [f"{v.get('change')} ({v.get('description')})" for v in variants[:4]]
+        mutation_lit_en.append(f"UniProt Variant Records: {'; '.join(top_uniprot)}.")
+    else:
+        mutation_lit_en.append("Scanning clinical databases for pathogenic variants.")
+
+    if literature:
+        top_paper = literature[0]
+        mutation_lit_en.append(f"Most Cited Publication ({top_paper.get('year', '')}, {top_paper.get('journal', '')}): \"{top_paper.get('title', '')}\" - {top_paper.get('citations', 0)} citations.")
+
+    sections_en = [
+        {
+            "title": "🧬 Primary Biological Role",
+            "items": bio_role_en
+        },
+        {
+            "title": "⚠️ Disease & Clinical Associations",
+            "items": disease_points_en
+        },
+        {
+            "title": "🔬 3D Structure & AlphaFold Confidence Analysis",
+            "items": structure_points_en
+        },
+        {
+            "title": "⚡ Key Mutation & Literature Findings",
+            "items": mutation_lit_en
+        }
+    ]
+
     return {
         "source": "BioLens Biyomedikal Yapay Zekâ Analiz Motoru",
-        "sections": sections
+        "sourceEn": "BioLens Biomedical AI Synthesis Engine",
+        "sections": sections,
+        "sectionsEn": sections_en
     }
 
 

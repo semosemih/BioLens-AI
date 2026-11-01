@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Dna, Activity, Shield, Flame, Heart, Brain, Filter, Zap, History, X, CheckCircle2 } from 'lucide-react';
+import { Search, Dna, Activity, Shield, Flame, Heart, Brain, Filter, Zap, History, X, CheckCircle2, Globe } from 'lucide-react';
 
 const ICON_MAP = {
   shield: Shield,
@@ -32,7 +32,7 @@ function normalizeTr(str) {
     .trim();
 }
 
-export default function Header({ onSearch, currentQuery, loading, examples }) {
+export default function Header({ onSearch, currentQuery, loading, examples, lang = 'en', onChangeLang }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -303,10 +303,14 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                 <h1 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.03em', background: 'linear-gradient(90deg, #f8fafc, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   BioLens AI
                 </h1>
-                <span className="badge badge-cyan" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>v1.0 Prototip</span>
+                <span className="badge badge-cyan" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                  {lang === 'en' ? 'v1.0 Prototype' : 'v1.0 Prototip'}
+                </span>
               </div>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Protein Keşfi & Hastalık İlişkileri Platformu
+                {lang === 'en'
+                  ? 'Protein Discovery & Clinical Disease Association Platform'
+                  : 'Protein Keşfi & Hastalık İlişkileri Platformu'}
               </p>
             </div>
           </div>
@@ -339,7 +343,11 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                     triggerAutocomplete(searchTerm);
                   }
                 }}
-                placeholder="Gen, protein veya hastalık ara (örn. TP53, İnsülin, HER2, BRCA1, Hemoglobin)..."
+                placeholder={
+                  lang === 'en'
+                    ? 'Search gene, protein or disease (e.g., TP53, Insulin, HER2, BRCA1, Hemoglobin)...'
+                    : 'Gen, protein veya hastalık ara (örn. TP53, İnsülin, HER2, BRCA1, Hemoglobin)...'
+                }
                 style={{
                   width: '100%',
                   background: 'rgba(15, 23, 42, 0.75)',
@@ -359,7 +367,7 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  title="Aramayı temizle"
+                  title={lang === 'en' ? 'Clear search' : 'Aramayı temizle'}
                   style={{
                     position: 'absolute',
                     right: '88px',
@@ -404,7 +412,9 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                   transition: 'all 0.2s'
                 }}
               >
-                {loading ? 'Aranıyor...' : 'Keşfet'}
+                {loading
+                  ? (lang === 'en' ? 'Searching...' : 'Aranıyor...')
+                  : (lang === 'en' ? 'Explore' : 'Keşfet')}
               </button>
             </form>
 
@@ -468,7 +478,16 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                           )}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {hit.turkishName ? (
+                          {lang === 'en' ? (
+                            <>
+                              <span style={{ color: '#e2e8f0', fontWeight: 500 }}>{hit.proteinName || hit.turkishName}</span>
+                              {hit.turkishName && hit.proteinName && hit.proteinName !== hit.turkishName && (
+                                <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontSize: '0.75rem' }}>
+                                  • {hit.turkishName}
+                                </span>
+                              )}
+                            </>
+                          ) : hit.turkishName ? (
                             <>
                               <span style={{ color: '#e2e8f0', fontWeight: 500 }}>{hit.turkishName}</span>
                               {hit.proteinName && hit.proteinName !== hit.turkishName && (
@@ -490,7 +509,9 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                         )}
                         {hit.organism && (
                           <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', opacity: 0.8 }}>
-                            {hit.organism === 'Homo sapiens' ? 'İnsan' : hit.organism.split(' ').slice(0, 2).join(' ')}
+                            {hit.organism === 'Homo sapiens'
+                              ? (lang === 'en' ? 'Human' : 'İnsan')
+                              : hit.organism.split(' ').slice(0, 2).join(' ')}
                           </div>
                         )}
                       </div>
@@ -508,17 +529,23 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                       borderTopColor: '#38bdf8',
                       animation: 'spinSlow 0.8s linear infinite'
                     }} />
-                    <span>UniProtKB ve biyomedikal katalog taranıyor...</span>
+                    <span>
+                      {lang === 'en' ? 'Scanning UniProtKB and biomedical catalog...' : 'UniProtKB ve biyomedikal katalog taranıyor...'}
+                    </span>
                   </div>
                 )}
 
                 {!searchingSuggestions && suggestions.length === 0 && searchTerm.trim().length >= 2 && (
                   <div style={{ padding: '14px 16px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      &ldquo;{searchTerm.trim()}&rdquo; için doğrudan eşleşme bulunamadı.
+                      {lang === 'en'
+                        ? `No direct match found for "${searchTerm.trim()}".`
+                        : `"${searchTerm.trim()}" için doğrudan eşleşme bulunamadı.`}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                      Örnek gen sembolleri veya protein adlarıyla arayabilirsiniz:
+                      {lang === 'en'
+                        ? 'Try searching by gene symbol or protein name:'
+                        : 'Örnek gen sembolleri veya protein adlarıyla arayabilirsiniz:'}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px' }}>
                       {['TP53', 'EGFR', 'BRCA1', 'INS', 'APOE', 'HBB'].map((sym) => (
@@ -547,13 +574,55 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
             )}
           </div>
 
-          {/* Real Scientific Databases badge group */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Kaynaklar:</span>
-            <span className="badge badge-blue" style={{ fontSize: '0.65rem' }}>UniProt</span>
-            <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>AlphaFold DB</span>
-            <span className="badge badge-rose" style={{ fontSize: '0.65rem' }}>ClinVar</span>
-            <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>PubMed</span>
+          {/* Real Scientific Databases badge group + Language Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {lang === 'en' ? 'Sources:' : 'Kaynaklar:'}
+              </span>
+              <span className="badge badge-blue" style={{ fontSize: '0.65rem' }}>UniProt</span>
+              <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>AlphaFold DB</span>
+              <span className="badge badge-rose" style={{ fontSize: '0.65rem' }}>ClinVar</span>
+              <span className="badge badge-purple" style={{ fontSize: '0.65rem' }}>PubMed</span>
+            </div>
+
+            {/* Language Switcher EN | TR */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: '8px',
+              padding: '2px',
+              gap: '2px'
+            }}>
+              <Globe size={13} style={{ color: '#38bdf8', marginLeft: '6px', marginRight: '2px' }} />
+              {['en', 'tr'].map((code) => {
+                const active = lang === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => onChangeLang && onChangeLang(code)}
+                    style={{
+                      background: active ? 'linear-gradient(135deg, #0ea5e9, #2563eb)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      transition: 'all 0.15s'
+                    }}
+                    title={code === 'en' ? 'Switch to English' : 'Türkçe diline geç'}
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -569,7 +638,7 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
               <span style={{ fontSize: '0.73rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
                 <History size={13} />
-                Son:
+                {lang === 'en' ? 'Recent:' : 'Son:'}
               </span>
               {recentSearches.map((item, idx) => (
                 <button
@@ -586,7 +655,7 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                     cursor: 'pointer',
                     transition: 'all 0.15s'
                   }}
-                  title={`${item} verilerini yükle`}
+                  title={lang === 'en' ? `Load ${item} data` : `${item} verilerini yükle`}
                 >
                   {item}
                 </button>
@@ -596,11 +665,13 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
           )}
 
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
-            Hızlı İncele:
+            {lang === 'en' ? 'Quick Explore:' : 'Hızlı İncele:'}
           </span>
           {examples && examples.map((ex, idx) => {
             const IconComponent = ICON_MAP[ex.icon] || Dna;
             const isSelected = currentQuery && currentQuery.toUpperCase() === ex.symbol;
+            const displayName = lang === 'en' ? (ex.nameEn || ex.name) : ex.name;
+            const displayCategory = lang === 'en' ? (ex.categoryEn || ex.category) : ex.category;
 
             return (
               <button
@@ -621,10 +692,10 @@ export default function Header({ onSearch, currentQuery, loading, examples }) {
                   flexShrink: 0,
                   transition: 'all 0.15s'
                 }}
-                title={`${ex.name} • ${ex.category}`}
+                title={`${displayName} • ${displayCategory}`}
               >
                 <IconComponent size={12} />
-                <span><strong>{ex.symbol}</strong> - {ex.name.split(' ')[0]}</span>
+                <span><strong>{ex.symbol}</strong> - {displayName.split(' ')[0]}</span>
               </button>
             );
           })}

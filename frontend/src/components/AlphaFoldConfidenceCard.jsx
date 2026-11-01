@@ -1,18 +1,23 @@
 import React from 'react';
 import { ShieldCheck, HelpCircle, Download, ExternalLink, Activity } from 'lucide-react';
 
-export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
+export default function AlphaFoldConfidenceCard({ alphafold, accession, lang = 'en' }) {
   if (!alphafold) return null;
 
   const {
     globalMetricValue,
     confidenceTier,
+    confidenceTierEn,
     confidenceDesc,
+    confidenceDescEn,
     badgeColor,
     plddtScale,
     pdbUrl,
     cifUrl
   } = alphafold;
+
+  const displayTier = lang === 'en' ? (confidenceTierEn || confidenceTier) : confidenceTier;
+  const displayDesc = lang === 'en' ? (confidenceDescEn || confidenceDesc) : confidenceDesc;
 
   // Calculate circular stroke dash for gauge
   const radius = 38;
@@ -35,8 +40,12 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
             <ShieldCheck size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Yapısal Tahmin Güvenilirliği</h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>AlphaFold per-residue pLDDT metriği</p>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>
+              {lang === 'en' ? 'Structural Prediction Confidence' : 'Yapısal Tahmin Güvenilirliği'}
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              {lang === 'en' ? 'AlphaFold per-residue pLDDT metric' : 'AlphaFold per-residue pLDDT metriği'}
+            </p>
           </div>
         </div>
 
@@ -50,7 +59,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
             padding: '4px 12px'
           }}
         >
-          {confidenceTier}
+          {displayTier}
         </span>
       </div>
 
@@ -110,10 +119,10 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
         {/* Scientific description */}
         <div>
           <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f1f5f9', marginBottom: '4px' }}>
-            Ortalama pLDDT Skoru: {globalMetricValue}
+            {lang === 'en' ? `Average pLDDT Score: ${globalMetricValue}` : `Ortalama pLDDT Skoru: ${globalMetricValue}`}
           </h4>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-            {confidenceDesc}
+            {displayDesc}
           </p>
         </div>
       </div>
@@ -121,7 +130,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
       {/* pLDDT Scale Legend */}
       <div style={{ marginBottom: '20px' }}>
         <h5 style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          AlphaFold Renk ve Güven Skalası
+          {lang === 'en' ? 'AlphaFold Color & Confidence Scale' : 'AlphaFold Renk ve Güven Skalası'}
         </h5>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
           {plddtScale && plddtScale.map((tier, idx) => (
@@ -149,7 +158,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
                   {tier.range}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  {tier.level}
+                  {lang === 'en' ? (tier.levelEn || tier.level) : tier.level}
                 </div>
               </div>
             </div>
@@ -182,7 +191,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
             }}
           >
             <Download size={14} />
-            .PDB İndir
+            {lang === 'en' ? 'Download .PDB' : '.PDB İndir'}
           </a>
         )}
 
@@ -209,7 +218,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
             }}
           >
             <Download size={14} />
-            .mmCIF İndir
+            {lang === 'en' ? 'Download .mmCIF' : '.mmCIF İndir'}
           </a>
         )}
 
@@ -230,7 +239,7 @@ export default function AlphaFoldConfidenceCard({ alphafold, accession }) {
             fontSize: '0.8rem',
             textDecoration: 'none'
           }}
-          title="AlphaFold EBI Sayfasını Aç"
+          title={lang === 'en' ? 'Open AlphaFold EBI Page' : 'AlphaFold EBI Sayfasını Aç'}
         >
           <ExternalLink size={14} />
           AlphaFold DB

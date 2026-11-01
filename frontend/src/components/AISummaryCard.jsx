@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
 import { Sparkles, Copy, Check, BookOpen, Brain, Activity } from 'lucide-react';
 
-export default function AISummaryCard({ aiSummary, geneSymbol }) {
+export default function AISummaryCard({ aiSummary, geneSymbol, lang = 'en' }) {
   const [copied, setCopied] = useState(false);
 
   if (!aiSummary || !aiSummary.sections) return null;
 
+  const activeSections = lang === 'en' && aiSummary.sectionsEn ? aiSummary.sectionsEn : aiSummary.sections;
+  const activeSource = lang === 'en'
+    ? (aiSummary.sourceEn || 'BioLens Biomedical AI Synthesis Engine')
+    : (aiSummary.source || 'BioLens Biyomedikal NLP & LLM Sentezi');
+
   const handleCopy = () => {
-    const textToCopy = aiSummary.sections.map(s => {
+    const textToCopy = activeSections.map(s => {
       return `### ${s.title}\n` + s.items.map(item => `• ${item}`).join('\n');
     }).join('\n\n');
 
-    navigator.clipboard.writeText(`BioLens AI - ${geneSymbol} Biyomedikal Özet:\n\n` + textToCopy);
+    const headerLabel = lang === 'en'
+      ? `BioLens AI - ${geneSymbol} Biomedical Summary:\n\n`
+      : `BioLens AI - ${geneSymbol} Biyomedikal Özet:\n\n`;
+
+    navigator.clipboard.writeText(headerLabel + textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -51,14 +60,14 @@ export default function AISummaryCard({ aiSummary, geneSymbol }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>
-                Biyomedikal Yapay Zekâ Analizi
+                {lang === 'en' ? 'Biomedical AI Analysis' : 'Biyomedikal Yapay Zekâ Analizi'}
               </h3>
               <span className="badge badge-cyan" style={{ fontSize: '0.7rem' }}>
                 {geneSymbol}
               </span>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              {aiSummary.source || 'BioLens Biyomedikal NLP & LLM Sentezi'}
+              {activeSource}
             </p>
           </div>
         </div>
@@ -80,13 +89,15 @@ export default function AISummaryCard({ aiSummary, geneSymbol }) {
           }}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? 'Kopyalandı' : 'Özeti Kopyala'}
+          {copied
+            ? (lang === 'en' ? 'Copied' : 'Kopyalandı')
+            : (lang === 'en' ? 'Copy Summary' : 'Özeti Kopyala')}
         </button>
       </div>
 
       {/* Sections Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '18px' }}>
-        {aiSummary.sections.map((section, idx) => (
+        {activeSections.map((section, idx) => (
           <div
             key={idx}
             style={{

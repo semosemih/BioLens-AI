@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, ExternalLink, ChevronDown, ChevronUp, Award } from 'lucide-react';
 
-export default function LiteratureSection({ literature, geneSymbol }) {
+export default function LiteratureSection({ literature, geneSymbol, lang = 'en' }) {
   const [expandedIndex, setExpandedIndex] = useState(0);
 
   if (!literature || literature.length === 0) return null;
@@ -20,15 +20,19 @@ export default function LiteratureSection({ literature, geneSymbol }) {
             <BookOpen size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Bilimsel Literatür & Yayınlar</h3>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>
+              {lang === 'en' ? 'Scientific Literature & Publications' : 'Bilimsel Literatür & Yayınlar'}
+            </h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Europe PMC / PubMed hakemli makale kaynakları ({literature.length} yayın)
+              {lang === 'en'
+                ? `Peer-reviewed articles from Europe PMC / PubMed (${literature.length} publications)`
+                : `Europe PMC / PubMed hakemli makale kaynakları (${literature.length} yayın)`}
             </p>
           </div>
         </div>
 
         <span className="badge badge-purple" style={{ fontSize: '0.7rem' }}>
-          Yüksek Atıflı
+          {lang === 'en' ? 'Highly Cited' : 'Yüksek Atıflı'}
         </span>
       </div>
 
@@ -73,7 +77,7 @@ export default function LiteratureSection({ literature, geneSymbol }) {
                         gap: '4px'
                       }}>
                         <Award size={11} />
-                        {paper.citations} Atıf
+                        {paper.citations} {lang === 'en' ? 'Citations' : 'Atıf'}
                       </span>
                     )}
                   </div>
@@ -110,7 +114,7 @@ export default function LiteratureSection({ literature, geneSymbol }) {
                         justifyContent: 'center',
                         textDecoration: 'none'
                       }}
-                      title="PubMed veya DOI Kaynağına Git"
+                      title={lang === 'en' ? 'Open in PubMed or DOI' : 'PubMed veya DOI Kaynağına Git'}
                     >
                       <ExternalLink size={14} />
                     </a>
@@ -130,7 +134,7 @@ export default function LiteratureSection({ literature, geneSymbol }) {
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}
-                      title={isExpanded ? "Özeti Kapat" : "Özeti Göster"}
+                      title={isExpanded ? (lang === 'en' ? 'Hide Abstract' : 'Özeti Kapat') : (lang === 'en' ? 'Show Abstract' : 'Özeti Göster')}
                     >
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
@@ -152,7 +156,7 @@ export default function LiteratureSection({ literature, geneSymbol }) {
                   borderRadius: '8px'
                 }}>
                   <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '4px' }}>
-                    Makale Özeti (Abstract):
+                    {lang === 'en' ? 'Abstract:' : 'Makale Özeti (Abstract):'}
                   </strong>
                   {paper.abstract}
                 </div>

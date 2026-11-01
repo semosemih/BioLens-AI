@@ -36,57 +36,81 @@ CURATED_EXAMPLES = [
     {
         "symbol": "TP53",
         "name": "Hücresel Tümör Antijeni p53",
+        "nameEn": "Cellular Tumor Antigen p53",
         "category": "Onkoloji / DNA Tamiri",
+        "categoryEn": "Oncology / DNA Repair",
         "description": "Genomun koruyucusu olarak bilinen, insan kanserlerinin %50'sinden fazlasında mutasyona uğrayan anahtar tümör baskılayıcı.",
+        "descriptionEn": "Known as the guardian of the genome; key tumor suppressor mutated in over 50% of human cancers.",
         "icon": "shield"
     },
     {
         "symbol": "EGFR",
         "name": "Epidermal Büyüme Faktörü Reseptörü",
+        "nameEn": "Epidermal Growth Factor Receptor",
         "category": "Hedefe Yönelik Tedavi / Onkoloji",
+        "categoryEn": "Targeted Therapy / Oncology",
         "description": "Akciğer kanserinde hedefe yönelik tirozin kinaz inhibitörlerinin (TKI) birincil hedefi olan hücre yüzeyi reseptörü.",
+        "descriptionEn": "Cell surface receptor and primary target of tyrosine kinase inhibitors (TKIs) in non-small cell lung cancer.",
         "icon": "activity"
     },
     {
         "symbol": "BRCA1",
         "name": "Meme Kanseri Tip 1 Duyarlılık Proteini",
+        "nameEn": "Breast Cancer Type 1 Susceptibility Protein",
         "category": "Genetik Risk / DNA Çift Kol Kırığı",
+        "categoryEn": "Genetic Risk / Double-Strand DNA Repair",
         "description": "Homolog rekombinasyon ve DNA hasar onarımında rol alan, kalıtsal meme ve yumurtalık kanseri ile ilişkili protein.",
+        "descriptionEn": "Involved in homologous recombination and DNA damage repair; linked to hereditary breast and ovarian cancer.",
         "icon": "dna"
     },
     {
         "symbol": "INS",
         "name": "İnsülin",
+        "nameEn": "Insulin",
         "category": "Metabolizma / Endokrinoloji",
+        "categoryEn": "Metabolism / Endocrinology",
         "description": "Glikoz homeostazını yöneten, beta hücrelerinde sentezlenen ve diyabet patogenezinin merkezindeki peptit hormon.",
+        "descriptionEn": "Peptide hormone synthesized in pancreatic beta cells that regulates glucose homeostasis and diabetes pathogenesis.",
         "icon": "zap"
     },
     {
         "symbol": "CFTR",
         "name": "Kistik Fibrozis Transmembran İletkenlik Regülatörü",
+        "nameEn": "Cystic Fibrosis Transmembrane Conductance Regulator",
         "category": "Nadir Hastalıklar / İyon Kanalı",
+        "categoryEn": "Rare Diseases / Ion Channel",
         "description": "Klor ve tiyosiyanat iyonlarını taşıyan ABC taşıyıcı kanalı; mutasyonları kistik fibrozise yol açar (özellikle delta-F508).",
+        "descriptionEn": "ABC transporter chloride channel; mutations (especially F508del) cause cystic fibrosis.",
         "icon": "filter"
     },
     {
         "symbol": "ACE2",
         "name": "Anjiyotensin Dönüştürücü Enzim 2",
+        "nameEn": "Angiotensin-Converting Enzyme 2",
         "category": "Kardiyovasküler / İnfeksiyon",
+        "categoryEn": "Cardiovascular / Infectious Disease",
         "description": "Renin-anjiyotensin sisteminde vazodilatör etki gösteren ve SARS-CoV-2 spike proteininin hücreye giriş reseptörü.",
+        "descriptionEn": "Vasodilator regulator in the renin-angiotensin system and host cell entry receptor for SARS-CoV-2 spike protein.",
         "icon": "heart"
     },
     {
         "symbol": "APOE",
         "name": "Apolipoprotein E",
+        "nameEn": "Apolipoprotein E",
         "category": "Nörodejenerasyon / Lipid Metabolizması",
+        "categoryEn": "Neurodegeneration / Lipid Metabolism",
         "description": "Kolesterol ve lipid taşınmasında görevli; APOE-ε4 alleli geç başlangıçlı Alzheimer hastalığı için en güçlü genetik risk faktörüdür.",
+        "descriptionEn": "Mediates cholesterol and lipid transport; the APOE-ε4 allele is the strongest genetic risk factor for late-onset Alzheimer's disease.",
         "icon": "brain"
     },
     {
         "symbol": "BRAF",
         "name": "B-Raf Proto-Onkojen Serin/Treonin Kinaz",
+        "nameEn": "Serine/Threonine-Protein Kinase B-raf",
         "category": "Onkoloji / MAPK Yolağı",
+        "categoryEn": "Oncology / MAPK Pathway",
         "description": "MAPK/ERK sinyal yolağını kontrol eden kinaz; V600E mutasyonu melanom ve kolorektal kanserlerde aşırı proliferasyona neden olur.",
+        "descriptionEn": "Kinase controlling the MAPK/ERK signaling cascade; V600E mutation drives proliferation in melanoma and colorectal cancer.",
         "icon": "flame"
     }
 ]

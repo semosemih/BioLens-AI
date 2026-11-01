@@ -19,7 +19,8 @@ export default function ProteinViewer3D({
   geneSymbol, 
   plddtScore, 
   highlightResidue, 
-  onClearHighlight 
+  onClearHighlight,
+  lang = 'en'
 }) {
   const panelRef = useRef(null);
   const containerRef = useRef(null);
@@ -373,13 +374,15 @@ export default function ProteinViewer3D({
           }}></div>
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              AlphaFold 3B Yapısal Tahmin
+              {lang === 'en' ? 'AlphaFold 3D Structural Prediction' : 'AlphaFold 3B Yapısal Tahmin'}
               <span className="badge badge-cyan" style={{ fontSize: '0.7rem' }}>
                 {geneSymbol || accession}
               </span>
             </h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Etkileşimli 3Dmol.js WebGL Görüntüleyici • Döndürmek için sürükleyin, yakınlaştırmak için kaydırın
+              {lang === 'en'
+                ? 'Interactive 3Dmol.js WebGL Viewer • Drag to rotate, scroll to zoom'
+                : 'Etkileşimli 3Dmol.js WebGL Görüntüleyici • Döndürmek için sürükleyin, yakınlaştırmak için kaydırın'}
             </p>
           </div>
         </div>
@@ -393,7 +396,7 @@ export default function ProteinViewer3D({
               <input
                 type="number"
                 min="1"
-                placeholder="Kalıntı No (örn: 175)"
+                placeholder={lang === 'en' ? 'Residue # (e.g. 175)' : 'Kalıntı No (örn: 175)'}
                 value={customResidue}
                 onChange={(e) => setCustomResidue(e.target.value)}
                 style={{
@@ -410,7 +413,7 @@ export default function ProteinViewer3D({
             </div>
             <button
               type="submit"
-              title="Girilen amino asit kalıntısına 3D odaklan"
+              title={lang === 'en' ? 'Focus on amino acid residue in 3D' : 'Girilen amino asit kalıntısına 3D odaklan'}
               style={{
                 background: 'rgba(244, 63, 94, 0.15)',
                 border: '1px solid rgba(244, 63, 94, 0.3)',
@@ -424,7 +427,7 @@ export default function ProteinViewer3D({
                 transition: 'all 0.2s'
               }}
             >
-              Odaklan
+              {lang === 'en' ? 'Focus' : 'Odaklan'}
             </button>
           </form>
 
@@ -704,24 +707,24 @@ export default function ProteinViewer3D({
           zIndex: 5
         }}>
           <div style={{ fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-            AlphaFold Model Güveni (pLDDT)
+            {lang === 'en' ? 'AlphaFold Model Confidence (pLDDT)' : 'AlphaFold Model Güveni (pLDDT)'}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#0053d6' }}></span>
-              <span>&gt; 90: Çok Yüksek</span>
+              <span>&gt; 90: {lang === 'en' ? 'Very High' : 'Çok Yüksek'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#65cbf3' }}></span>
-              <span>70 - 90: Güvenilir</span>
+              <span>70 - 90: {lang === 'en' ? 'Confident' : 'Güvenilir'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ffdb13' }}></span>
-              <span>50 - 70: Düşük</span>
+              <span>50 - 70: {lang === 'en' ? 'Low' : 'Düşük'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ff7d45' }}></span>
-              <span>&lt; 50: Çok Düşük (Düzensiz/IDR)</span>
+              <span>&lt; 50: {lang === 'en' ? 'Very Low (Disordered/IDR)' : 'Çok Düşük (Düzensiz/IDR)'}</span>
             </div>
           </div>
         </div>
@@ -741,7 +744,9 @@ export default function ProteinViewer3D({
       }}>
         {/* Render Style Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>Stil:</span>
+          <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
+            {lang === 'en' ? 'Style:' : 'Stil:'}
+          </span>
           {['cartoon', 'stick', 'sphere'].map((style) => (
             <button
               key={style}
@@ -757,7 +762,11 @@ export default function ProteinViewer3D({
                 textTransform: 'capitalize'
               }}
             >
-              {style === 'cartoon' ? 'Şerit (Ribbon)' : style === 'stick' ? 'Çubuk (Stick)' : 'Küre (Sphere)'}
+              {style === 'cartoon'
+                ? (lang === 'en' ? 'Ribbon' : 'Şerit (Ribbon)')
+                : style === 'stick'
+                ? (lang === 'en' ? 'Stick' : 'Çubuk (Stick)')
+                : (lang === 'en' ? 'Sphere' : 'Küre (Sphere)')}
             </button>
           ))}
 
@@ -778,18 +787,20 @@ export default function ProteinViewer3D({
             }}
           >
             <Layers size={13} />
-            Moleküler Yüzey
+            {lang === 'en' ? 'Molecular Surface' : 'Moleküler Yüzey'}
           </button>
         </div>
 
         {/* Color Palette Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Palette size={14} style={{ color: 'var(--text-muted)' }} />
-          <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>Renklendirme:</span>
+          <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
+            {lang === 'en' ? 'Coloring:' : 'Renklendirme:'}
+          </span>
           {[
             { id: 'plddt', label: 'AlphaFold pLDDT' },
-            { id: 'rainbow', label: 'Spektrum (N-C)' },
-            { id: 'ss', label: 'İkincil Yapı' }
+            { id: 'rainbow', label: lang === 'en' ? 'Spectrum (N-C)' : 'Spektrum (N-C)' },
+            { id: 'ss', label: lang === 'en' ? 'Secondary Structure' : 'İkincil Yapı' }
           ].map((c) => (
             <button
               key={c.id}

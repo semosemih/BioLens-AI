@@ -38,7 +38,7 @@ function toShortVariantCode(str) {
   return s;
 }
 
-export default function MutationTable({ clinvarVariants, uniprotVariants, onSelectResidue, activeResidue }) {
+export default function MutationTable({ clinvarVariants, uniprotVariants, onSelectResidue, activeResidue, lang = 'en' }) {
   const [filterType, setFilterType] = useState('all'); // all, clinvar, uniprot
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -53,7 +53,9 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
         change: v.proteinChange || v.title,
         position: v.position,
         significance: v.clinicalSignificance || 'Pathogenic',
-        disease: (v.conditions && v.conditions.length > 0) ? v.conditions.join(', ') : 'Belirtilmemiş',
+        disease: (v.conditions && v.conditions.length > 0)
+          ? v.conditions.join(', ')
+          : (lang === 'en' ? 'Not specified' : 'Belirtilmemiş'),
         url: v.clinvarUrl
       });
     });
@@ -66,8 +68,10 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
         id: v.featureId || `uni-${idx}`,
         change: v.change || `Pos ${v.position}`,
         position: v.position ? parseInt(v.position) : null,
-        significance: v.type === 'Natural variant' ? 'Doğal Varyant' : 'Mutagenez',
-        disease: v.description || 'Klinik veri',
+        significance: v.type === 'Natural variant'
+          ? (lang === 'en' ? 'Natural Variant' : 'Doğal Varyant')
+          : (lang === 'en' ? 'Mutagenesis' : 'Mutagenez'),
+        disease: v.description || (lang === 'en' ? 'Clinical annotation' : 'Klinik veri'),
         url: `https://www.uniprot.org/uniprotkb?query=${v.featureId || ''}`
       });
     });
@@ -117,9 +121,13 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
             <AlertTriangle size={20} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Bilinen Mutasyonlar ve Varyantlar</h3>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>
+              {lang === 'en' ? 'Known Mutations & Clinical Variants' : 'Bilinen Mutasyonlar ve Varyantlar'}
+            </h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              ClinVar & UniProt patojenik klinik kayıtları ({combinedList.length} varyant)
+              {lang === 'en'
+                ? `Pathogenic & clinical records from ClinVar & UniProt (${combinedList.length} variants)`
+                : `ClinVar & UniProt patojenik klinik kayıtları (${combinedList.length} varyant)`}
             </p>
           </div>
         </div>
@@ -130,7 +138,7 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
-              placeholder="Mutasyon / Hastalık ara..."
+              placeholder={lang === 'en' ? 'Filter mutation / condition...' : 'Mutasyon / Hastalık ara...'}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               style={{
@@ -162,7 +170,7 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
                   cursor: 'pointer'
                 }}
               >
-                {t === 'all' ? 'Tümü' : t === 'clinvar' ? 'ClinVar' : 'UniProt'}
+                {t === 'all' ? (lang === 'en' ? 'All' : 'Tümü') : t === 'clinvar' ? 'ClinVar' : 'UniProt'}
               </button>
             ))}
           </div>
@@ -180,18 +188,28 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
               top: 0,
               zIndex: 2
             }}>
-              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>Mutasyon</th>
-              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>Pozisyon</th>
-              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>Klinik Anlam</th>
-              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>İlişkili Hastalık</th>
-              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right' }}>3D Etkileşim</th>
+              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {lang === 'en' ? 'Variant' : 'Mutasyon'}
+              </th>
+              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {lang === 'en' ? 'Position' : 'Pozisyon'}
+              </th>
+              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {lang === 'en' ? 'Clinical Significance' : 'Klinik Anlam'}
+              </th>
+              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                {lang === 'en' ? 'Associated Condition' : 'İlişkili Hastalık'}
+              </th>
+              <th style={{ padding: '10px 12px', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right' }}>
+                {lang === 'en' ? '3D Action' : '3D Etkileşim'}
+              </th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  Arama kriterlerine uygun mutasyon bulunamadı.
+                  {lang === 'en' ? 'No matching variants found.' : 'Arama kriterlerine uygun mutasyon bulunamadı.'}
                 </td>
               </tr>
             ) : (
@@ -251,7 +269,7 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
                         {item.position && (
                           <button
                             onClick={() => onSelectResidue && onSelectResidue(item)}
-                            title="3D AlphaFold modelinde kalıntıyı vurgula ve yakınlaştır"
+                            title={lang === 'en' ? 'Highlight and zoom into residue on 3D AlphaFold structure' : '3D AlphaFold modelinde kalıntıyı vurgula ve yakınlaştır'}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -268,7 +286,7 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
                             }}
                           >
                             <Target size={12} />
-                            3D Odaklan
+                            {lang === 'en' ? '3D Focus' : '3D Odaklan'}
                           </button>
                         )}
 
@@ -283,7 +301,7 @@ export default function MutationTable({ clinvarVariants, uniprotVariants, onSele
                               alignItems: 'center',
                               padding: '4px'
                             }}
-                            title="Veritabanı Kaydını İncele"
+                            title={lang === 'en' ? 'View Database Record' : 'Veritabanı Kaydını İncele'}
                           >
                             <ExternalLink size={13} />
                           </a>

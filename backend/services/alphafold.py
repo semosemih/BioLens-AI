@@ -25,25 +25,35 @@ def get_alphafold_prediction(accession: str) -> Optional[Dict[str, Any]]:
         
         # pLDDT Confidence Tier explanations in Turkish and English
         confidence_tier = "Bilinmiyor"
+        confidence_tier_en = "Unknown"
         confidence_desc = ""
+        confidence_desc_en = ""
         badge_color = "#3b82f6"
         
         if global_plddt is not None:
             if global_plddt >= 90:
                 confidence_tier = "Çok Yüksek Güven (Very High)"
+                confidence_tier_en = "Very High Confidence"
                 confidence_desc = "Omurga ve yan zincir koordinatları yüksek doğrulukta tahmin edilmiştir. Aktif bölge ve ligand etkileşim analizleri için uygundur."
+                confidence_desc_en = "Backbone and side-chain coordinates are predicted with high accuracy. Suitable for active site and ligand interaction analysis."
                 badge_color = "#1d4ed8"  # Dark blue
             elif global_plddt >= 70:
                 confidence_tier = "Güvenilir (Confident)"
+                confidence_tier_en = "Confident (Well-Modeled)"
                 confidence_desc = "Genel omurga katlanması ve ikincil yapı elemanları (alfa heliks, beta tabaka) yüksek oranda güvenilirdir."
+                confidence_desc_en = "Overall backbone fold and secondary structure elements (alpha-helices, beta-sheets) are modeled with good confidence."
                 badge_color = "#0284c7"  # Sky blue
             elif global_plddt >= 50:
                 confidence_tier = "Düşük Güven (Low)"
+                confidence_tier_en = "Low Confidence"
                 confidence_desc = "Dinamik döngüler (loops) veya esnek yüzey bölgeleri içerebilir. İkincil yapı tahmini dikkatle ele alınmalıdır."
+                confidence_desc_en = "May contain flexible surface loops or dynamic linker regions. Secondary structure predictions should be interpreted with caution."
                 badge_color = "#eab308"  # Yellow
             else:
                 confidence_tier = "Çok Düşük Güven (Very Low / Disordered)"
+                confidence_tier_en = "Very Low Confidence (Disordered / IDR)"
                 confidence_desc = "Muhtemelen yapısal olarak düzensiz (IDR - Intrinsically Disordered Region) veya izole halde stabil katlanmayan dinamik segmenttir."
+                confidence_desc_en = "Likely represents intrinsically disordered regions (IDRs) or dynamic segments that do not adopt a rigid fold in isolation."
                 badge_color = "#f97316"  # Orange
 
         return {
@@ -63,32 +73,42 @@ def get_alphafold_prediction(accession: str) -> Optional[Dict[str, Any]]:
             "plddtDocUrl": pred.get("plddtDocUrl"),
             "globalMetricValue": round(global_plddt, 1) if global_plddt is not None else None,
             "confidenceTier": confidence_tier,
+            "confidenceTierEn": confidence_tier_en,
             "confidenceDesc": confidence_desc,
+            "confidenceDescEn": confidence_desc_en,
             "badgeColor": badge_color,
             "plddtScale": [
                 {
                     "range": "> 90",
                     "level": "Çok Yüksek",
+                    "levelEn": "Very High",
                     "color": "#1d4ed8",
-                    "meaning": "Yüksek doğrulukta omurga ve yan zincirler"
+                    "meaning": "Yüksek doğrulukta omurga ve yan zincirler",
+                    "meaningEn": "High accuracy backbone and side chains"
                 },
                 {
                     "range": "70 - 90",
                     "level": "Güvenilir",
+                    "levelEn": "Confident",
                     "color": "#0284c7",
-                    "meaning": "Genel üçüncül katlanma doğru"
+                    "meaning": "Genel üçüncül katlanma doğru",
+                    "meaningEn": "Generally accurate tertiary fold"
                 },
                 {
                     "range": "50 - 70",
                     "level": "Düşük",
+                    "levelEn": "Low",
                     "color": "#eab308",
-                    "meaning": "Esnek bölgeler ve yüzey döngüleri"
+                    "meaning": "Esnek bölgeler ve yüzey döngüleri",
+                    "meaningEn": "Flexible regions and surface loops"
                 },
                 {
                     "range": "< 50",
                     "level": "Çok Düşük",
+                    "levelEn": "Very Low (IDR)",
                     "color": "#f97316",
-                    "meaning": "Yapısal olarak düzensiz (IDR) bölgeler"
+                    "meaning": "Yapısal olarak düzensiz (IDR) bölgeler",
+                    "meaningEn": "Intrinsically disordered regions (IDRs)"
                 }
             ]
         }

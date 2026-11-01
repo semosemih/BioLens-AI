@@ -10,6 +10,13 @@ import LiteratureSection from './components/LiteratureSection';
 import { Sparkles, Dna, GitPullRequest, ArrowRight, ShieldCheck, Database, Cpu, Compass } from 'lucide-react';
 
 export default function App() {
+  const [lang, setLang] = useState(() => {
+    try {
+      return localStorage.getItem('biolens_lang') || 'en';
+    } catch {
+      return 'en';
+    }
+  });
   const [currentQuery, setCurrentQuery] = useState('TP53');
   const [proteinData, setProteinData] = useState(null);
   const [examples, setExamples] = useState([]);
@@ -17,6 +24,13 @@ export default function App() {
   const [error, setError] = useState(null);
   const [highlightResidue, setHighlightResidue] = useState(null);
   const [showRoadmapModal, setShowRoadmapModal] = useState(false);
+
+  const handleToggleLang = (nextLang) => {
+    setLang(nextLang);
+    try {
+      localStorage.setItem('biolens_lang', nextLang);
+    } catch {}
+  };
 
   // Fetch examples on mount
   useEffect(() => {
@@ -79,6 +93,8 @@ export default function App() {
         currentQuery={currentQuery}
         loading={loading}
         examples={examples}
+        lang={lang}
+        onChangeLang={handleToggleLang}
       />
 
       {/* Main Content Area */}
@@ -103,10 +119,14 @@ export default function App() {
             }}></div>
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#f8fafc' }}>
-                {currentQuery} Bilimsel Verileri Derleniyor...
+                {lang === 'en'
+                  ? `Compiling Scientific Data for ${currentQuery}...`
+                  : `${currentQuery} Bilimsel Verileri Derleniyor...`}
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                UniProt, AlphaFold DB, ClinVar ve PubMed API'lerinden veri toplanıp Türkçe özet hazırlanıyor.
+                {lang === 'en'
+                  ? 'Fetching multi-source data from UniProt, AlphaFold DB, ClinVar & PubMed APIs and synthesizing biomedical summary.'
+                  : "UniProt, AlphaFold DB, ClinVar ve PubMed API'lerinden veri toplanıp Türkçe özet hazırlanıyor."}
               </p>
             </div>
           </div>
@@ -134,7 +154,9 @@ export default function App() {
             }}>
               !
             </div>
-            <h3 style={{ fontSize: '1.15rem', color: '#f8fafc', marginBottom: '8px' }}>Protein Bulunamadı</h3>
+            <h3 style={{ fontSize: '1.15rem', color: '#f8fafc', marginBottom: '8px' }}>
+              {lang === 'en' ? 'Protein Not Found' : 'Protein Bulunamadı'}
+            </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               {error}
             </p>
@@ -152,7 +174,7 @@ export default function App() {
                   cursor: 'pointer'
                 }}
               >
-                TP53 ile Devam Et
+                {lang === 'en' ? 'Continue with TP53' : 'TP53 ile Devam Et'}
               </button>
             </div>
           </div>
@@ -171,11 +193,13 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <ProteinOverview 
                   protein={proteinData.uniprot} 
-                  fullData={proteinData} 
+                  fullData={proteinData}
+                  lang={lang}
                 />
                 <AlphaFoldConfidenceCard
                   alphafold={proteinData.alphafold}
                   accession={proteinData.accession}
+                  lang={lang}
                 />
               </div>
 
@@ -187,14 +211,16 @@ export default function App() {
                   plddtScore={proteinData.alphafold?.globalMetricValue}
                   highlightResidue={highlightResidue}
                   onClearHighlight={() => setHighlightResidue(null)}
+                  lang={lang}
                 />
               </div>
             </div>
 
-            {/* Middle Row: Turkish Biomedical AI Summary Card */}
+            {/* Middle Row: Biomedical AI Summary Card */}
             <AISummaryCard
               aiSummary={proteinData.aiSummary}
               geneSymbol={proteinData.geneSymbol}
+              lang={lang}
             />
 
             {/* Comprehensive Clinical Disease Spectrum, Syndromes & Pathophysiology */}
@@ -202,6 +228,7 @@ export default function App() {
               diseaseProfile={proteinData.diseaseProfile}
               geneSymbol={proteinData.geneSymbol}
               onSelectResidue={handleSelectMutationResidue}
+              lang={lang}
             />
 
             {/* Bottom Row: ClinVar Mutations & Scientific Literature */}
@@ -215,11 +242,13 @@ export default function App() {
                 uniprotVariants={proteinData.uniprot?.variants}
                 onSelectResidue={handleSelectMutationResidue}
                 activeResidue={highlightResidue}
+                lang={lang}
               />
 
               <LiteratureSection
                 literature={proteinData.literature}
                 geneSymbol={proteinData.geneSymbol}
+                lang={lang}
               />
             </div>
           </div>
@@ -250,7 +279,7 @@ export default function App() {
         }}
       >
         <Compass size={18} />
-        <span>Geliştirme Yol Haritası & Mimari</span>
+        <span>{lang === 'en' ? 'Development Roadmap & Architecture' : 'Geliştirme Yol Haritası & Mimari'}</span>
       </button>
 
       {/* Roadmap Modal */}
@@ -277,10 +306,10 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#f8fafc' }}>
-                  BioLens AI Sistem Mimarisi & Yol Haritası
+                  {lang === 'en' ? 'BioLens AI System Architecture & Roadmap' : 'BioLens AI Sistem Mimarisi & Yol Haritası'}
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Hesaplamalı Biyoloji & Derin Öğrenme Entegrasyon Planı
+                  {lang === 'en' ? 'Computational Biology & Deep Learning Integration Plan' : 'Hesaplamalı Biyoloji & Derin Öğrenme Entegrasyon Planı'}
                 </p>
               </div>
               <button
@@ -311,10 +340,12 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 600, marginBottom: '6px' }}>
                   <ShieldCheck size={18} />
-                  <span>Faz 1: Veri Toplayıcı & API (Aktif)</span>
+                  <span>{lang === 'en' ? 'Phase 1: Data Aggregator & API (Active)' : 'Faz 1: Veri Toplayıcı & API (Aktif)'}</span>
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  FastAPI backend ile UniProt REST, AlphaFold DB, ClinVar ve Europe PMC uç noktaları bağlandı. Otomatik ID çözümleme ve PDB streaming aktiftir.
+                  {lang === 'en'
+                    ? 'FastAPI backend connected to UniProt REST, AlphaFold DB, ClinVar, and Europe PMC endpoints with automatic ID resolution and PDB coordinate streaming.'
+                    : 'FastAPI backend ile UniProt REST, AlphaFold DB, ClinVar ve Europe PMC uç noktaları bağlandı. Otomatik ID çözümleme ve PDB streaming aktiftir.'}
                 </p>
               </div>
 
@@ -326,10 +357,12 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontWeight: 600, marginBottom: '6px' }}>
                   <Dna size={18} />
-                  <span>Faz 2: 3D Arayüz & İstemci (Aktif)</span>
+                  <span>{lang === 'en' ? 'Phase 2: 3D Molecular Interface & Client (Active)' : 'Faz 2: 3D Arayüz & İstemci (Aktif)'}</span>
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  React + 3Dmol.js entegrasyonu; pLDDT renk kodlaması, şerit/yüzey/küre stilleri ve mutasyon tablosundan 3B yapıda doğrudan kalıntı işaretleme (focus & label).
+                  {lang === 'en'
+                    ? 'React + 3Dmol.js WebGL integration with pLDDT confidence coloring, ribbon/surface/sphere styles, and interactive residue focusing from the clinical mutation table.'
+                    : 'React + 3Dmol.js entegrasyonu; pLDDT renk kodlaması, şerit/yüzey/küre stilleri ve mutasyon tablosundan 3B yapıda doğrudan kalıntı işaretleme (focus & label).'}
                 </p>
               </div>
 
@@ -341,10 +374,12 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c084fc', fontWeight: 600, marginBottom: '6px' }}>
                   <Sparkles size={18} />
-                  <span>Faz 3: Zekâ Katmanı (Aktif)</span>
+                  <span>{lang === 'en' ? 'Phase 3: Biomedical Intelligence Layer (Active)' : 'Faz 3: Zekâ Katmanı (Aktif)'}</span>
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  PubMed/Europe PMC literatür analizi + Türkçe Biyomedikal Yapay Zekâ özetleyici motoru. Biyolojik rol, klinik etki ve yapısal analiz sentezi.
+                  {lang === 'en'
+                    ? 'PubMed/Europe PMC literature mining + bilingual AI biomedical synthesis engine combining biological function, clinical impact, and structural analysis.'
+                    : 'PubMed/Europe PMC literatür analizi + Türkçe Biyomedikal Yapay Zekâ özetleyici motoru. Biyolojik rol, klinik etki ve yapısal analiz sentezi.'}
                 </p>
               </div>
 
@@ -356,10 +391,12 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontWeight: 600, marginBottom: '6px' }}>
                   <Cpu size={18} />
-                  <span>Sonraki Adım: ESM-2 Protein Dil Modeli (İleri Aşama)</span>
+                  <span>{lang === 'en' ? 'Next Step: ESM-2 Protein Language Model (Upcoming)' : 'Sonraki Adım: ESM-2 Protein Dil Modeli (İleri Aşama)'}</span>
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Meta AI'nin ESM-2 (Evolutionary Scale Modeling) protein dil modelini ekleyerek; kullanıcının girdiği özel amino asit değişiminde log-likelihood skoruyla "Zero-shot variant effect" tahmini yapma servisi.
+                  {lang === 'en'
+                    ? "Integration of Meta AI's ESM-2 (Evolutionary Scale Modeling) protein language model for zero-shot log-likelihood variant effect prediction on custom amino acid substitutions."
+                    : "Meta AI'nin ESM-2 (Evolutionary Scale Modeling) protein dil modelini ekleyerek; kullanıcının girdiği özel amino asit değişiminde log-likelihood skoruyla \"Zero-shot variant effect\" tahmini yapma servisi."}
                 </p>
               </div>
             </div>
@@ -377,7 +414,7 @@ export default function App() {
       }}>
         <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <strong>BioLens AI</strong> • Hesaplamalı Biyoloji & Protein Araştırma Platformu
+            <strong>BioLens AI</strong> • {lang === 'en' ? 'Computational Biology & Protein Research Platform' : 'Hesaplamalı Biyoloji & Protein Araştırma Platformu'}
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             AlphaFold EBI Database • UniProtKB • NCBI ClinVar • Europe PMC / PubMed
