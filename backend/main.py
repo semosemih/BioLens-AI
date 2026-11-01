@@ -1,6 +1,14 @@
+import os
+import sys
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+
+# Ensure backend directory is in sys.path for both local and Vercel serverless imports
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 from services.uniprot import search_proteins, get_protein_details
 from services.alphafold import get_alphafold_prediction, fetch_pdb_file
@@ -117,17 +125,18 @@ def get_protein(identifier: str):
     gene_symbol = uniprot_data["geneSymbol"]
     protein_name = uniprot_data["proteinName"]
 
-    # 1. Fetch AlphaFold prediction
-    alphafold_data = get_alphafold_prediction(accession)
+    # 1-3. Fetch AlphaFold, ClinVar, and Europe PMC concurrently for fast serverless response
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        af_future = executor.submit(get_alphafold_prediction, accession)
+        cv_future = executor.submit(get_clinvar_variants, gene_symbol)
+        lit_future = executor.submit(get_scientific_literature, gene_symbol, protein_name)
 
-    # 2. Fetch ClinVar pathogenic variants
-    clinvar_variants = get_clinvar_variants(gene_symbol)
+        alphafold_data = af_future.result()
+        clinvar_variants = cv_future.result()
+        literature = lit_future.result()
 
-    # 3. Build comprehensive multi-source clinical disease & syndrome profile
+    # 4. Build comprehensive multi-source clinical disease & syndrome profile
     disease_profile = build_comprehensive_disease_profile(uniprot_data, clinvar_variants)
-
-    # 4. Fetch Europe PMC / PubMed scientific papers
-    literature = get_scientific_literature(gene_symbol, protein_name)
 
     # 5. Generate Turkish AI / Biomedical summary
     ai_summary = generate_turkish_summary(
