@@ -1,3 +1,4 @@
+import re
 import requests
 from typing import Dict, Any, List
 
@@ -99,16 +100,16 @@ def get_clinvar_variants(gene_symbol: str, limit: int = 35) -> List[Dict[str, An
                 if t_name and t_name.lower() not in IGNORE_TRAITS and t_name not in traits:
                     traits.append(t_name)
                     
-            # Parse protein change (e.g. p.Arg175His or p.R175H)
+            # Parse protein change (e.g. p.Arg175His, p.R175H, p.Arg248GlyfsTer22)
             p_change = ""
             pos = None
             if "p." in title:
-                part = title.split("p.")[-1].split(")")[0]
+                part = title.split("p.")[-1].split(")")[0].strip()
                 p_change = f"p.{part}"
-                digits = "".join([c for c in part if c.isdigit()])
-                if digits:
+                m = re.search(r"[A-Za-z]{1,3}(\d+)", part) or re.search(r"(\d+)", part)
+                if m:
                     try:
-                        pos = int(digits)
+                        pos = int(m.group(1))
                     except ValueError:
                         pass
 

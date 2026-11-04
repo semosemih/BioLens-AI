@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dna, MapPin, Tag, Copy, Check, ChevronDown, ChevronUp, Layers, FileDown } from 'lucide-react';
+import { Dna, MapPin, Tag, Copy, Check, ChevronDown, ChevronUp, Layers, FileDown, GitBranch, Zap } from 'lucide-react';
 
 export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
   const [showFasta, setShowFasta] = useState(false);
@@ -17,8 +17,10 @@ export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
     mass,
     sequence,
     subcellularLocations,
+    pathways,
     goTerms,
-    functions
+    functions,
+    structuralFeatures
   } = protein;
 
   const handleCopyFasta = () => {
@@ -29,85 +31,119 @@ export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
   };
 
   const handleExportReport = () => {
-    const dateStr = new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const isEn = lang === 'en';
+    const dateStr = new Date().toLocaleDateString(isEn ? 'en-US' : 'tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
     const gene = geneSymbol || accession;
 
-    let report = `# 🧬 BioLens AI Biyomedikal Araştırma Raporu: ${gene}\n\n`;
-    report += `> **Oluşturulma Tarihi:** ${dateStr}  \n`;
-    report += `> **Rapor Kaynağı:** BioLens AI (Hesaplamalı Biyoloji & Yapısal Genomik Platformu)\n\n`;
-    report += `---\n\n`;
+    let report = isEn
+      ? `# 🧬 BioLens AI Biomedical Research Report: ${gene}\n\n`
+      : `# 🧬 BioLens AI Biyomedikal Araştırma Raporu: ${gene}\n\n`;
+    report += isEn
+      ? `> **Generated On:** ${dateStr}  \n> **Source:** BioLens AI (Computational Biology & Structural Genomics Platform)\n\n---\n\n`
+      : `> **Oluşturulma Tarihi:** ${dateStr}  \n> **Rapor Kaynağı:** BioLens AI (Hesaplamalı Biyoloji & Yapısal Genomik Platformu)\n\n---\n\n`;
 
-    // 1. Genel Tanımlayıcılar
-    report += `## 📋 1. Genel Bilgiler ve Tanımlayıcılar\n\n`;
-    report += `- **Gen Sembolü:** \`${geneSymbol}\`\n`;
+    // 1. General Identifiers
+    report += isEn
+      ? `## 📋 1. General Overview & Identifiers\n\n`
+      : `## 📋 1. Genel Bilgiler ve Tanımlayıcılar\n\n`;
+    report += `- **${isEn ? 'Gene Symbol' : 'Gen Sembolü'}:** \`${geneSymbol}\`\n`;
     report += `- **UniProt Accession:** [${accession}](https://www.uniprot.org/uniprotkb/${accession})\n`;
-    report += `- **Protein Adı:** ${proteinName}\n`;
-    report += `- **Organizma:** ${organism} (${commonOrganism || 'Belirtilmemiş'})\n`;
-    report += `- **Dizi Uzunluğu:** ${length} amino asit\n`;
-    report += `- **Moleküler Kütle:** ${mass ? (mass / 1000).toFixed(1) + ' kDa' : 'Bilinmiyor'}\n\n`;
+    report += `- **${isEn ? 'Protein Name' : 'Protein Adı'}:** ${proteinName}\n`;
+    report += `- **${isEn ? 'Organism' : 'Organizma'}:** ${organism} (${commonOrganism || (isEn ? 'Unspecified' : 'Belirtilmemiş')})\n`;
+    report += `- **${isEn ? 'Sequence Length' : 'Dizi Uzunluğu'}:** ${length} ${isEn ? 'amino acids' : 'amino asit'}\n`;
+    report += `- **${isEn ? 'Molecular Mass' : 'Moleküler Kütle'}:** ${mass ? (mass / 1000).toFixed(1) + ' kDa' : (isEn ? 'Unknown' : 'Bilinmiyor')}\n\n`;
 
-    // 2. Biyolojik İşlev ve Hücresel Konum
-    report += `## 🔬 2. Biyolojik İşlev ve Gen Ontolojisi (GO)\n\n`;
+    // 2. Biological Function & GO
+    report += isEn
+      ? `## 🔬 2. Biological Function, Pathways & Gene Ontology (GO)\n\n`
+      : `## 🔬 2. Biyolojik İşlev, Yolaklar ve Gen Ontolojisi (GO)\n\n`;
     if (functions && functions.length > 0) {
-      report += `### Birincil Biyolojik İşlev\n${functions.join('\n\n')}\n\n`;
+      report += `### ${isEn ? 'Primary Biological Function' : 'Birincil Biyolojik İşlev'}\n${functions.join('\n\n')}\n\n`;
     }
     if (subcellularLocations && subcellularLocations.length > 0) {
-      report += `### Hücresel Yerleşim\n${subcellularLocations.map(l => `- ${l}`).join('\n')}\n\n`;
+      report += `### ${isEn ? 'Subcellular Localization' : 'Hücresel Yerleşim'}\n${subcellularLocations.map(l => `- ${l}`).join('\n')}\n\n`;
+    }
+    if (pathways && pathways.length > 0) {
+      report += `### ${isEn ? 'Biological Pathways (Reactome / UniProt)' : 'Biyolojik Sinyal Yolakları (Reactome / UniProt)'}\n${pathways.map(p => `- ${p}`).join('\n')}\n\n`;
     }
     if (goTerms && goTerms.biologicalProcess && goTerms.biologicalProcess.length > 0) {
-      report += `### Gen Ontolojisi (Biyolojik Süreçler)\n`;
+      report += `### ${isEn ? 'Gene Ontology (Biological Processes)' : 'Gen Ontolojisi (Biyolojik Süreçler)'}\n`;
       report += goTerms.biologicalProcess.slice(0, 8).map(t => `- **${t.name}** (\`${t.id}\`)`).join('\n') + '\n\n';
     }
-
-    // 3. AlphaFold 3B Yapı Analizi
-    if (fullData?.alphafold) {
-      const af = fullData.alphafold;
-      report += `## 📐 3. AlphaFold 3B Yapısal Tahmin Analizi\n\n`;
-      report += `- **Global Ortalama pLDDT Güven Skoru:** **${af.globalMetricValue || '--'}** / 100 (${af.confidenceTier || 'Bilinmiyor'})\n`;
-      report += `- **AlphaFold DB Model Kodu:** \`${af.entryId || 'AF-' + accession + '-F1'}\`\n`;
-      report += `- **PDB Koordinat Bağlantısı:** [AlphaFold DB PDB Dosyası](${af.pdbUrl || '#'})\n\n`;
+    if (structuralFeatures && structuralFeatures.length > 0) {
+      report += `### ${isEn ? 'Structural Domains & Functional Sites' : 'Yapısal Domainler ve Fonksiyonel Bölgeler'}\n`;
+      report += structuralFeatures.slice(0, 15).map(f => `- **${f.type}** (${f.start}-${f.end}): ${f.description}`).join('\n') + '\n\n';
     }
 
-    // 4. Kapsamlı Klinik Hastalık Spektrumu, Sendromlar ve Patofizyoloji
+    // 3. AlphaFold 3D Structure Analysis
+    if (fullData?.alphafold) {
+      const af = fullData.alphafold;
+      const tier = isEn ? (af.confidenceTierEn || af.confidenceTier) : af.confidenceTier;
+      report += isEn
+        ? `## 📐 3. AlphaFold 3D Structural Prediction Analysis\n\n`
+        : `## 📐 3. AlphaFold 3B Yapısal Tahmin Analizi\n\n`;
+      report += `- **${isEn ? 'Global Mean pLDDT Confidence Score' : 'Global Ortalama pLDDT Güven Skoru'}:** **${af.globalMetricValue || '--'}** / 100 (${tier || '--'})\n`;
+      report += `- **${isEn ? 'AlphaFold DB Model ID' : 'AlphaFold DB Model Kodu'}:** \`${af.entryId || 'AF-' + accession + '-F1'}\`\n`;
+      report += `- **${isEn ? 'PDB Coordinates Link' : 'PDB Koordinat Bağlantısı'}:** [AlphaFold DB PDB](${af.pdbUrl || '#'})\n\n`;
+    }
+
+    // 4. Comprehensive Clinical Disease Spectrum
     if (fullData?.diseaseProfile?.diseases && fullData.diseaseProfile.diseases.length > 0) {
       const dp = fullData.diseaseProfile;
-      report += `## 🩺 4. Kapsamlı Klinik Hastalık Spektrumu ve Patofizyoloji (${dp.diseases.length} Hastalık)\n\n`;
+      report += isEn
+        ? `## 🩺 4. Comprehensive Clinical Disease Spectrum & Pathophysiology (${dp.diseases.length} Conditions)\n\n`
+        : `## 🩺 4. Kapsamlı Klinik Hastalık Spektrumu ve Patofizyoloji (${dp.diseases.length} Hastalık)\n\n`;
       dp.diseases.forEach((d, i) => {
-        report += `### 4.${i + 1}. ${d.name}${d.acronym ? ` (${d.acronym})` : ''}\n`;
-        report += `- **Tıbbi Branş:** ${d.category || 'Klinik Patoloji'}\n`;
-        if (d.inheritance) report += `- **Kalıtım / Genetik Mekanizma:** ${d.inheritance}\n`;
-        if (d.omimId) report += `- **OMIM Referansı:** [OMIM #${d.omimId}](https://www.omim.org/entry/${d.omimId})\n`;
-        if (d.orphaId) report += `- **Orphanet Referansı:** [ORPHA:${d.orphaId}](https://www.orpha.net/en/disease/detail/${d.orphaId})\n`;
-        if (d.pathophysiology) report += `- **Patofizyoloji & Klinik Tablo:** ${d.pathophysiology}\n`;
-        if (d.clinicalManagement) report += `- **Klinik Yaklaşım & Hedefli Tedavi:** ${d.clinicalManagement}\n`;
+        const dTitle = isEn ? (d.englishName || d.name) : d.name;
+        const dCat = isEn ? (d.categoryEn || d.primarySpecialtyEn || d.category) : d.category;
+        const dInh = isEn ? (d.inheritanceEn || d.inheritance) : d.inheritance;
+        const dPath = isEn ? (d.pathophysiologyEn || d.pathophysiology) : d.pathophysiology;
+        const dMgmt = isEn ? (d.clinicalManagementEn || d.clinicalManagement) : d.clinicalManagement;
+
+        report += `### 4.${i + 1}. ${dTitle}${d.acronym ? ` (${d.acronym})` : ''}\n`;
+        report += `- **${isEn ? 'Medical Specialty' : 'Tıbbi Branş'}:** ${dCat || (isEn ? 'Clinical Pathology' : 'Klinik Patoloji')}\n`;
+        if (dInh) report += `- **${isEn ? 'Inheritance / Mechanism' : 'Kalıtım / Genetik Mekanizma'}:** ${dInh}\n`;
+        if (d.omimId) report += `- **OMIM:** [OMIM #${d.omimId}](https://www.omim.org/entry/${d.omimId})\n`;
+        if (d.orphaId) report += `- **Orphanet:** [ORPHA:${d.orphaId}](https://www.orpha.net/en/disease/detail/${d.orphaId})\n`;
+        if (dPath) report += `- **${isEn ? 'Pathophysiology & Clinical Presentation' : 'Patofizyoloji & Klinik Tablo'}:** ${dPath}\n`;
+        if (dMgmt) report += `- **${isEn ? 'Clinical Management & Targeted Therapy' : 'Klinik Yaklaşım & Hedefli Tedavi'}:** ${dMgmt}\n`;
         if (d.relatedMutations && d.relatedMutations.length > 0) {
-          report += `- **İlişkili Varyantlar:** \`${d.relatedMutations.join('`, `')}\`\n`;
+          report += `- **${isEn ? 'Associated Variants' : 'İlişkili Varyantlar'}:** \`${d.relatedMutations.join('`, `')}\`\n`;
         }
         report += `\n`;
       });
     }
 
-    // 5. Klinik Mutasyonlar (ClinVar)
+    // 5. Clinical Variants (ClinVar)
     if (fullData?.clinvar && fullData.clinvar.length > 0) {
-      report += `## ⚠️ 5. Klinik Olarak Bildirilen Patojenik Mutasyonlar (ClinVar)\n\n`;
-      report += `| Pozisyon | Mutasyon / Değişim | Klinik Önem | İlişkili Hastalık / Klinik Durum |\n`;
-      report += `| :---: | :--- | :--- | :--- |\n`;
+      report += isEn
+        ? `## ⚠️ 5. Clinically Reported Pathogenic Variants (ClinVar)\n\n| Position | Variant / Change | Clinical Significance | Associated Condition |\n| :---: | :--- | :--- | :--- |\n`
+        : `## ⚠️ 5. Klinik Olarak Bildirilen Patojenik Mutasyonlar (ClinVar)\n\n| Pozisyon | Mutasyon / Değişim | Klinik Önem | İlişkili Hastalık / Klinik Durum |\n| :---: | :--- | :--- | :--- |\n`;
       fullData.clinvar.slice(0, 20).forEach(v => {
         const pos = v.position || '-';
         const change = v.proteinChange || v.title || '-';
         const sig = v.clinicalSignificance || 'Pathogenic';
-        const dis = (v.conditions && v.conditions.length > 0) ? v.conditions.join(', ') : 'Belirtilmemiş';
+        const dis = (v.conditions && v.conditions.length > 0) ? v.conditions.join(', ') : (isEn ? 'Unspecified' : 'Belirtilmemiş');
         report += `| ${pos} | ${change} | ${sig} | ${dis} |\n`;
       });
-      report += `\n*Not: Toplam ${fullData.clinvar.length} ClinVar varyantı tespit edilmiştir.*\n\n`;
+      report += isEn
+        ? `\n*Note: Total ${fullData.clinvar.length} ClinVar variants identified.*\n\n`
+        : `\n*Not: Toplam ${fullData.clinvar.length} ClinVar varyantı tespit edilmiştir.*\n\n`;
     }
 
-    // 6. Biyomedikal Yapay Zekâ Analizi
+    // 6. Biomedical AI Analysis
     if (fullData?.aiSummary) {
-      report += `## 🤖 6. Biyomedikal Yapay Zekâ Sentezi (Türkçe)\n\n`;
+      report += isEn
+        ? `## 🤖 6. Biomedical AI Synthesis\n\n`
+        : `## 🤖 6. Biyomedikal Yapay Zekâ Sentezi\n\n`;
       const ai = fullData.aiSummary;
-      if (Array.isArray(ai.sections)) {
-        ai.sections.forEach(sec => {
+      const sectionsToUse = (isEn && Array.isArray(ai.sectionsEn)) ? ai.sectionsEn : ai.sections;
+      if (Array.isArray(sectionsToUse)) {
+        sectionsToUse.forEach(sec => {
           report += `### ${sec.title}\n`;
           (sec.items || []).forEach(it => {
             report += `- ${it}\n`;
@@ -119,31 +155,44 @@ export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
       }
     }
 
-    // 6. Bilimsel Literatür
+    // 7. Scientific Literature (Fixed field names: authors, journal, year, citations, abstract, url)
     if (fullData?.literature && fullData.literature.length > 0) {
-      report += `## 📚 6. Hakemli Bilimsel Literatür (Europe PMC / PubMed)\n\n`;
+      report += isEn
+        ? `## 📚 7. Peer-Reviewed Scientific Literature (Europe PMC / PubMed)\n\n`
+        : `## 📚 7. Hakemli Bilimsel Literatür (Europe PMC / PubMed)\n\n`;
       fullData.literature.slice(0, 5).forEach((paper, i) => {
+        const authors = paper.authors || paper.authorString || (isEn ? 'Unspecified' : 'Belirtilmemiş');
+        const journal = paper.journal || paper.journalTitle || (isEn ? 'Unknown' : 'Bilinmiyor');
+        const year = paper.year || paper.pubYear || '--';
+        const citations = paper.citations ?? paper.citedByCount ?? 0;
+        const abstract = paper.abstract || paper.abstractText || '';
+
         report += `### ${i + 1}. ${paper.title}\n`;
-        report += `- **Yazarlar:** ${paper.authorString || 'Belirtilmemiş'}\n`;
-        report += `- **Dergi & Yıl:** *${paper.journalTitle || 'Bilinmiyor'}* (${paper.pubYear || '--'})\n`;
-        report += `- **Atıf Sayısı:** ${paper.citedByCount || 0}\n`;
-        if (paper.doi) report += `- **DOI:** https://doi.org/${paper.doi}\n`;
-        if (paper.abstractText) report += `\n> **Özet:** ${paper.abstractText.substring(0, 350)}...\n`;
+        report += `- **${isEn ? 'Authors' : 'Yazarlar'}:** ${authors}\n`;
+        report += `- **${isEn ? 'Journal & Year' : 'Dergi & Yıl'}:** *${journal}* (${year})\n`;
+        report += `- **${isEn ? 'Citations' : 'Atıf Sayısı'}:** ${citations}\n`;
+        if (paper.url) report += `- **URL:** ${paper.url}\n`;
+        else if (paper.doi) report += `- **DOI:** https://doi.org/${paper.doi}\n`;
+        if (abstract) report += `\n> **${isEn ? 'Abstract' : 'Özet'}:** ${abstract.substring(0, 400)}${abstract.length > 400 ? '...' : ''}\n`;
         report += `\n`;
       });
     }
 
-    // 7. FASTA
-    report += `## 🧬 7. FASTA Dizi Koordinatı\n\n`;
+    // 8. FASTA
+    report += isEn
+      ? `## 🧬 8. FASTA Sequence\n\n`
+      : `## 🧬 8. FASTA Dizi Koordinatı\n\n`;
     report += `\`\`\`fasta\n>${accession}|${geneSymbol}|${proteinName} [${organism}]\n${sequence}\n\`\`\`\n\n`;
-    report += `---\n*Bu rapor BioLens AI Otomatik Biyomedikal Analiz Sistemi tarafından oluşturulmuştur.*`;
+    report += isEn
+      ? `---\n*Generated automatically by BioLens AI Biomedical Analysis System.*`
+      : `---\n*Bu rapor BioLens AI Otomatik Biyomedikal Analiz Sistemi tarafından oluşturulmuştur.*`;
 
     // Download file
     const blob = new Blob([report], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${gene}_BioLens_Arastirma_Raporu.md`;
+    a.download = isEn ? `${gene}_BioLens_Research_Report.md` : `${gene}_BioLens_Arastirma_Raporu.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -304,31 +353,89 @@ export default function ProteinOverview({ protein, fullData, lang = 'en' }) {
         </div>
       )}
 
-      {/* Gene Ontology (GO) Processes */}
-      {goTerms && (
-        <div>
+      {/* Biological Pathways (Reactome / UniProt) */}
+      {pathways && pathways.length > 0 && (
+        <div style={{ marginBottom: '18px' }}>
           <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Layers size={14} />
-            {lang === 'en' ? 'Gene Ontology (Biological Processes)' : 'Gen Ontolojisi (Gene Ontology - Biyolojik Süreçler)'}
+            <GitBranch size={14} />
+            {lang === 'en' ? 'Signaling & Metabolic Pathways (Reactome)' : 'Sinyal & Metabolik Yolaklar (Reactome)'}
           </h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {goTerms.biologicalProcess && goTerms.biologicalProcess.slice(0, 6).map((term, idx) => (
+            {pathways.slice(0, 5).map((pw, idx) => (
               <span
                 key={idx}
                 style={{
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  color: '#6ee7b7',
+                  background: 'rgba(14, 165, 233, 0.1)',
+                  border: '1px solid rgba(14, 165, 233, 0.25)',
+                  color: '#7dd3fc',
                   padding: '4px 10px',
                   borderRadius: '8px',
                   fontSize: '0.76rem'
                 }}
-                title={term.id}
               >
-                {term.name}
+                {pw}
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Gene Ontology (GO) Processes & Molecular Functions */}
+      {goTerms && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {goTerms.biologicalProcess && goTerms.biologicalProcess.length > 0 && (
+            <div>
+              <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Layers size={14} />
+                {lang === 'en' ? 'Gene Ontology (Biological Processes)' : 'Gen Ontolojisi (Biyolojik Süreçler)'}
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {goTerms.biologicalProcess.slice(0, 6).map((term, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      color: '#6ee7b7',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      fontSize: '0.76rem'
+                    }}
+                    title={term.id}
+                  >
+                    {term.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {goTerms.molecularFunction && goTerms.molecularFunction.length > 0 && (
+            <div>
+              <h4 style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={14} />
+                {lang === 'en' ? 'Molecular Functions (GO)' : 'Moleküler İşlevler (GO)'}
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {goTerms.molecularFunction.slice(0, 5).map((term, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      border: '1px solid rgba(245, 158, 11, 0.22)',
+                      color: '#fcd34d',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      fontSize: '0.76rem'
+                    }}
+                    title={term.id}
+                  >
+                    {term.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

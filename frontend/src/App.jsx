@@ -3,6 +3,7 @@ import Header from './components/Header';
 import ProteinOverview from './components/ProteinOverview';
 import ProteinViewer3D from './components/ProteinViewer3D';
 import AlphaFoldConfidenceCard from './components/AlphaFoldConfidenceCard';
+import ProteinDomainMap from './components/ProteinDomainMap';
 import AISummaryCard from './components/AISummaryCard';
 import DiseaseSpectrumSection from './components/DiseaseSpectrumSection';
 import MutationTable from './components/MutationTable';
@@ -215,6 +216,15 @@ export default function App() {
                 />
               </div>
             </div>
+
+            {/* 1D Functional Domain Architecture, Mutation Lollipop Track & Biophysical Profile */}
+            <ProteinDomainMap
+              protein={proteinData.uniprot}
+              clinvarVariants={proteinData.clinvar}
+              onSelectResidue={handleSelectMutationResidue}
+              activeResidue={highlightResidue}
+              lang={lang}
+            />
 
             {/* Middle Row: Biomedical AI Summary Card */}
             <AISummaryCard

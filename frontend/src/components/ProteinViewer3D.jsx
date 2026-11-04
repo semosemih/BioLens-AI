@@ -268,13 +268,16 @@ export default function ProteinViewer3D({
       setIsSpinning(false);
       viewer.removeAllLabels();
 
+      // Reset base styling before highlighting custom residue
+      applyStyling(viewer, renderStyle, colorScheme, showSurface);
+
       // Highlight target residue
       viewer.setStyle({ resi: pos }, {
         stick: { color: '#f43f5e', radius: 0.4 },
         sphere: { color: '#fb7185', scale: 0.5 }
       });
 
-      viewer.addLabel(`Kalıntı Pos ${pos}`, {
+      viewer.addLabel(lang === 'en' ? `Residue Pos ${pos}` : `Kalıntı Pos ${pos}`, {
         fontSize: 14,
         fontColor: '#ffffff',
         backgroundColor: '#e11d48',
@@ -300,7 +303,7 @@ export default function ProteinViewer3D({
     }
   };
 
-  // Focus and highlight specific residue from mutation selection
+  // Focus and highlight specific residue or structural domain from selection
   useEffect(() => {
     if (!viewerRef.current || !highlightResidue) return;
 
@@ -309,6 +312,44 @@ export default function ProteinViewer3D({
     setCustomResidue('');
 
     const viewer = viewerRef.current;
+
+    // Reset base styling first so previous highlights don't linger
+    applyStyling(viewer, renderStyle, colorScheme, showSurface);
+
+    if (highlightResidue.isDomain && highlightResidue.start && highlightResidue.end) {
+      const start = highlightResidue.start;
+      const end = highlightResidue.end;
+      const domColor = highlightResidue.color || '#a855f7';
+      const rangeList = [];
+      for (let i = start; i <= end; i++) {
+        rangeList.push(i);
+      }
+      const midPos = Math.floor((start + end) / 2);
+
+      viewer.spin(false);
+      setIsSpinning(false);
+      viewer.removeAllLabels();
+
+      // Dim non-selected regions slightly and highlight domain brightly
+      viewer.setStyle({}, { cartoon: { color: '#334155', opacity: 0.45 } });
+      viewer.setStyle({ resi: rangeList }, {
+        cartoon: { color: domColor, opacity: 1.0 },
+        stick: { color: domColor, radius: 0.18 }
+      });
+
+      viewer.addLabel(`${highlightResidue.change || 'Domain'} (${start}-${end})`, {
+        fontSize: 13,
+        fontColor: '#ffffff',
+        backgroundColor: domColor,
+        backgroundOpacity: 0.9,
+        inFront: true
+      }, { resi: midPos });
+
+      viewer.zoomTo({ resi: rangeList }, 800);
+      viewer.render();
+      return;
+    }
+
     const resi = highlightResidue.position;
 
     if (resi) {
@@ -326,7 +367,7 @@ export default function ProteinViewer3D({
       });
 
       // Add 3D text label above residue
-      viewer.addLabel(`${highlightResidue.change || 'Mutasyon'} (Pos ${resi})`, {
+      viewer.addLabel(`${highlightResidue.change || (lang === 'en' ? 'Variant' : 'Mutasyon')} (Pos ${resi})`, {
         fontSize: 14,
         fontColor: '#ffffff',
         backgroundColor: '#e11d48',
@@ -435,7 +476,7 @@ export default function ProteinViewer3D({
 
           <button
             onClick={toggleSpin}
-            title={isSpinning ? "Dönüşü Durdur" : "Otomatik Döndür"}
+            title={isSpinning ? (lang === 'en' ? 'Pause Rotation' : 'Dönüşü Durdur') : (lang === 'en' ? 'Auto-Rotate' : 'Otomatik Döndür')}
             style={{
               background: isSpinning ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)',
               color: isSpinning ? '#38bdf8' : 'var(--text-secondary)',
@@ -454,7 +495,7 @@ export default function ProteinViewer3D({
 
           <button
             onClick={handleResetView}
-            title="Görünümü Sıfırla"
+            title={lang === 'en' ? 'Reset Camera View' : 'Görünümü Sıfırla'}
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               color: 'var(--text-secondary)',
@@ -473,7 +514,7 @@ export default function ProteinViewer3D({
 
           <button
             onClick={handleDownloadPDB}
-            title="AlphaFold .PDB Koordinat Dosyasını İndir"
+            title={lang === 'en' ? 'Download AlphaFold .PDB Coordinates' : 'AlphaFold .PDB Koordinat Dosyasını İndir'}
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               color: 'var(--text-secondary)',
@@ -492,7 +533,7 @@ export default function ProteinViewer3D({
 
           <button
             onClick={handleSnapshot}
-            title="Yüksek Çözünürlüklü Görüntü İndir (PNG)"
+            title={lang === 'en' ? 'Download High-Res Snapshot (PNG)' : 'Yüksek Çözünürlüklü Görüntü İndir (PNG)'}
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               color: 'var(--text-secondary)',
@@ -511,7 +552,7 @@ export default function ProteinViewer3D({
 
           <button
             onClick={toggleFullscreen}
-            title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
+            title={isFullscreen ? (lang === 'en' ? 'Exit Fullscreen' : 'Tam Ekrandan Çık') : (lang === 'en' ? 'Enter Fullscreen' : 'Tam Ekran Yap')}
             style={{
               background: isFullscreen ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)',
               color: isFullscreen ? '#38bdf8' : 'var(--text-secondary)',
@@ -559,7 +600,7 @@ export default function ProteinViewer3D({
               animation: 'spinSlow 1s linear infinite'
             }}></div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              AlphaFold .PDB Koordinatları Çözümleniyor...
+              {lang === 'en' ? 'Streaming AlphaFold .PDB Coordinates...' : 'AlphaFold .PDB Koordinatları Çözümleniyor...'}
             </p>
           </div>
         )}
@@ -589,13 +630,13 @@ export default function ProteinViewer3D({
           style={{ width: '100%', height: '100%', cursor: 'grab' }}
         ></div>
 
-        {/* Highlight Banner if Mutation is selected from table */}
+        {/* Highlight Banner if Mutation or Domain is selected */}
         {highlightResidue && (
           <div style={{
             position: 'absolute',
             top: '16px',
             left: '16px',
-            background: 'rgba(225, 29, 72, 0.9)',
+            background: highlightResidue.isDomain ? (highlightResidue.color || '#9333ea') : 'rgba(225, 29, 72, 0.9)',
             backdropFilter: 'blur(10px)',
             color: '#fff',
             padding: '8px 14px',
@@ -604,12 +645,20 @@ export default function ProteinViewer3D({
             alignItems: 'center',
             gap: '10px',
             fontSize: '0.8rem',
-            boxShadow: '0 4px 15px rgba(225, 29, 72, 0.4)',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.45)',
             zIndex: 5
           }}>
             <Target size={16} />
             <span>
-              <strong>Seçili Mutasyon:</strong> {highlightResidue.change} (Pozisyon: {highlightResidue.position})
+              {highlightResidue.isDomain ? (
+                <>
+                  <strong>{lang === 'en' ? 'Focused Domain:' : 'Seçili Domain:'}</strong> {highlightResidue.change} ({highlightResidue.start}-{highlightResidue.end} aa)
+                </>
+              ) : (
+                <>
+                  <strong>{lang === 'en' ? 'Focused Variant:' : 'Seçili Mutasyon:'}</strong> {highlightResidue.change} ({lang === 'en' ? 'Pos:' : 'Pozisyon:'} {highlightResidue.position})
+                </>
+              )}
             </span>
             <button
               onClick={() => {
@@ -630,7 +679,7 @@ export default function ProteinViewer3D({
                 fontSize: '0.75rem'
               }}
             >
-              Temizle
+              {lang === 'en' ? 'Clear' : 'Temizle'}
             </button>
           </div>
         )}
@@ -655,7 +704,7 @@ export default function ProteinViewer3D({
           }}>
             <Target size={16} />
             <span>
-              <strong>Özel Kalıntı:</strong> Pozisyon {activeCustomResidue}
+              <strong>{lang === 'en' ? 'Custom Residue:' : 'Özel Kalıntı:'}</strong> {lang === 'en' ? `Position ${activeCustomResidue}` : `Pozisyon ${activeCustomResidue}`}
             </span>
             <button
               onClick={handleClearCustomResidue}
@@ -669,7 +718,7 @@ export default function ProteinViewer3D({
                 fontSize: '0.75rem'
               }}
             >
-              Temizle
+              {lang === 'en' ? 'Clear' : 'Temizle'}
             </button>
           </div>
         )}
@@ -689,7 +738,7 @@ export default function ProteinViewer3D({
             color: 'var(--text-primary)',
             zIndex: 5
           }}>
-            Kalıntı: <strong>{selectedResidueInfo.resn} {selectedResidueInfo.resi}</strong> (Zincir {selectedResidueInfo.chain}) • pLDDT Güven: <strong style={{ color: selectedResidueInfo.b >= 70 ? '#38bdf8' : '#fbbf24' }}>{selectedResidueInfo.b}</strong>
+            {lang === 'en' ? 'Residue:' : 'Kalıntı:'} <strong>{selectedResidueInfo.resn} {selectedResidueInfo.resi}</strong> ({lang === 'en' ? 'Chain' : 'Zincir'} {selectedResidueInfo.chain}) • {lang === 'en' ? 'pLDDT Confidence:' : 'pLDDT Güven:'} <strong style={{ color: selectedResidueInfo.b >= 70 ? '#38bdf8' : '#fbbf24' }}>{selectedResidueInfo.b}</strong>
           </div>
         )}
 

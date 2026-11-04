@@ -1354,15 +1354,32 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
             if p_name and p_name not in pathways:
                 pathways.append(p_name)
 
-    # Natural variants & Mutagenesis
+    # Natural variants, Mutagenesis & Structural/Functional Features (Domains, Active sites, Binding sites, etc.)
     variants = []
+    structural_features = []
+    domain_feature_types = {
+        "Domain",
+        "Region",
+        "DNA binding",
+        "Zinc finger",
+        "Transmembrane",
+        "Topological domain",
+        "Motif",
+        "Repeat",
+        "Coiled coil",
+        "Active site",
+        "Binding site",
+        "Site"
+    }
+
     for feat in entry.get("features", []):
         feat_type = feat.get("type", "")
+        loc = feat.get("location", {})
+        start = loc.get("start", {}).get("value")
+        end = loc.get("end", {}).get("value")
+        desc_val = feat.get("description", "")
+
         if feat_type in ["Natural variant", "Mutagenesis"]:
-            loc = feat.get("location", {})
-            start = loc.get("start", {}).get("value")
-            end = loc.get("end", {}).get("value")
-            desc_val = feat.get("description", "")
             orig_seq = feat.get("alternativeSequence", {}).get("originalSequence", "")
             alt_seqs = feat.get("alternativeSequence", {}).get("alternativeSequences", [])
             alt_str = "/".join(alt_seqs) if alt_seqs else ""
@@ -1379,6 +1396,16 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
                 "change": change,
                 "description": desc_val,
                 "featureId": feat.get("featureId", "")
+            })
+        elif feat_type in domain_feature_types and start is not None:
+            # Skip generic "Disordered" region noise if there are many, or keep concise label
+            ligand_name = feat.get("ligand", {}).get("name", "")
+            label = desc_val or ligand_name or feat_type
+            structural_features.append({
+                "type": feat_type,
+                "start": start,
+                "end": end if end is not None else start,
+                "description": label
             })
 
     return {
@@ -1407,6 +1434,7 @@ def parse_uniprot_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
             "molecularFunction": go_terms["molecular_function"][:10],
             "cellularComponent": go_terms["cellular_component"][:10]
         },
+        "structuralFeatures": structural_features[:40],
         "variants": variants[:50],
         "allVariants": variants
     }

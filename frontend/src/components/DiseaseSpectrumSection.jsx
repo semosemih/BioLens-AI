@@ -121,9 +121,10 @@ export default function DiseaseSpectrumSection({
 
   const handleMutationClick = (mutStr) => {
     if (!onSelectResidue || !mutStr) return;
-    const digits = mutStr.replace(/[^0-9]/g, '');
-    if (digits) {
-      const pos = parseInt(digits, 10);
+    // Prefer residue pattern like E746, R175H, Arg248, V600E over exon numbers
+    const aaMatch = mutStr.match(/(?:p\.)?[A-Za-z]{1,3}(\d{2,5})/i) || mutStr.match(/(\d+)/);
+    if (aaMatch && aaMatch[1]) {
+      const pos = parseInt(aaMatch[1], 10);
       if (!isNaN(pos) && pos > 0) {
         onSelectResidue({
           change: mutStr,
